@@ -1,0 +1,1490 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sesión 01 · Claude Code Deep Dive — UEx Servicio de Informática</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --ink:#0a0a0a; --ink2:#1a1a1a; --muted:#7a7a7a; --line:#e6e6e6;
+    --accent:#d97706;
+    --accent-2:#0ea5a4;
+    --blue:#2563eb;
+    --warn:#b91c1c;
+    --ok:#15803d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+
+  .deck{position:fixed;inset:0}
+  .slide{
+    position:absolute;inset:0;
+    height:100vh;height:100dvh;overflow:hidden;
+    padding:clamp(28px,4vw,56px);
+    display:grid;grid-template-rows:auto 1fr auto;gap:clamp(14px,2vw,24px);
+    opacity:0;transform:translateY(18px);
+    transition:opacity .4s ease, transform .5s cubic-bezier(.2,.7,.2,1);
+    pointer-events:none;
+  }
+  .slide.active{opacity:1;transform:none;pointer-events:auto}
+  .slide.prev{transform:translateY(-18px)}
+
+  .top,.bot{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    font-family:'JetBrains Mono',monospace;font-size:clamp(11px,.95vw,13px);
+    color:var(--muted);
+  }
+  .top{border-bottom:1px solid var(--line);padding-bottom:14px}
+  .bot{border-top:1px dashed var(--line);padding-top:12px}
+  .badge{
+    display:inline-flex;align-items:center;gap:8px;
+    border:1px solid var(--ink);padding:5px 10px;border-radius:2px;
+    color:var(--ink);background:#fff;font-weight:500;
+  }
+  .badge::before{content:"";width:7px;height:7px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite}
+  @keyframes pulse{50%{opacity:.35}}
+
+  .body{min-height:0;overflow:hidden}
+  .row2{display:grid;grid-template-columns:1.1fr 1fr;gap:clamp(24px,3.5vw,56px);align-items:center;height:100%}
+  .row2.top-align{align-items:start}
+  .stack{display:flex;flex-direction:column;justify-content:center;height:100%;gap:clamp(10px,1.5vw,18px)}
+
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:clamp(18px,1.6vw,23px);
+    color:var(--blue);
+    text-transform:none;letter-spacing:.04em;
+    font-weight:500;
+  }
+  h1.hero{
+    font-weight:700;font-size:clamp(44px,6.6vw,96px);
+    line-height:.98;letter-spacing:-.035em;
+  }
+  h1.hero .mono{font-family:'JetBrains Mono',monospace;font-weight:500;color:var(--accent-2)}
+  h1.hero .under{
+    background:linear-gradient(transparent 78%, color-mix(in srgb, var(--accent) 35%, transparent) 78%);
+    padding:0 .05em;
+  }
+  h2{
+    font-weight:700;font-size:clamp(30px,4vw,56px);
+    line-height:1.05;letter-spacing:-.025em;
+  }
+  h2 .hl{color:var(--accent)}
+  h2 .mono{font-family:'JetBrains Mono',monospace;font-weight:500;color:var(--accent-2)}
+  h3{font-weight:600;font-size:clamp(24px,2vw,30px);letter-spacing:-.01em}
+  p{font-size:clamp(22px,1.8vw,27px);line-height:1.55;color:#222;max-width:60ch}
+  p.lede{font-size:clamp(24px,2vw,29px);color:#1a1a1a;max-width:48ch}
+
+  ul.bul{list-style:none;display:flex;flex-direction:column;gap:clamp(12px,1.4vw,18px)}
+  ul.bul li{position:relative;padding-left:26px;font-size:clamp(21px,1.7vw,25px);line-height:1.5;color:#1a1a1a;max-width:60ch}
+  ul.bul li::before{
+    content:"›";position:absolute;left:0;top:0;color:var(--accent);
+    font-family:'JetBrains Mono',monospace;font-weight:700;
+  }
+  ul.bul.warn li::before{content:"✕";color:var(--warn)}
+  ul.bul.ok li::before{content:"✓";color:var(--ok)}
+
+  .grid{display:grid;gap:clamp(11px,1.3vw,17px)}
+  .grid.c2{grid-template-columns:1fr 1fr}
+  .grid.c3{grid-template-columns:repeat(3,1fr)}
+  .grid.c4{grid-template-columns:repeat(4,1fr)}
+  .card{
+    border:1px solid var(--line);border-radius:6px;padding:clamp(12px,1.3vw,18px);
+    background:#fff;display:flex;flex-direction:column;gap:6px;
+  }
+  .card .k{font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--accent);text-transform:uppercase;letter-spacing:.12em}
+  .card h3{font-size:clamp(22px,1.8vw,27px)}
+  .card p{font-size:clamp(20px,1.6vw,24px);color:#333;line-height:1.5}
+  .card.warn{border-color:#fecaca;background:#fff7f6}
+  .card.warn .k{color:var(--warn)}
+  .card.ok{border-color:#bbf7d0;background:#f4fbf6}
+  .card.ok .k{color:var(--ok)}
+  .card.blue{border-color:#bfdbfe;background:#f4f8ff}
+  .card.blue .k{color:var(--blue)}
+
+  .terminal{
+    background:#0a0a0a;color:#e8e8e8;border-radius:6px;
+    font-family:'JetBrains Mono',monospace;font-size:clamp(17px,1.4vw,21px);
+    padding:16px 18px;line-height:1.7;
+    box-shadow:0 24px 60px -28px rgba(0,0,0,.35), 0 2px 0 0 #000;
+    overflow:hidden;
+  }
+  .terminal .bar{display:flex;gap:6px;margin:-2px 0 10px}
+  .terminal .bar i{width:10px;height:10px;border-radius:50%;background:#333;display:block}
+  .terminal .p{color:#7dd3fc}
+  .terminal .c{color:#fbbf24}
+  .terminal .ok{color:#34d399}
+  .terminal .err{color:#f87171}
+  .terminal .dim{color:#888}
+  .terminal .com{color:#a78bfa}
+  .cursor{display:inline-block;width:8px;height:1.05em;background:#e8e8e8;vertical-align:-2px;margin-left:2px;animation:blink 1.05s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+
+  /* Claude Code authentic UI */
+  .ccbox{
+    border:1.5px solid #1a1a1a;border-radius:8px;background:#fafaf7;
+    font-family:'JetBrains Mono',monospace;font-size:clamp(17px,1.4vw,21px);
+    overflow:hidden;display:flex;flex-direction:column;
+    box-shadow:0 18px 40px -22px rgba(0,0,0,.18);
+  }
+  .ccbox .ccbar{
+    display:flex;justify-content:space-between;align-items:center;
+    background:#fff;border-bottom:1px solid var(--line);
+    padding:10px 16px;font-size:14px;color:#666;
+  }
+  .ccbox .ccbar .left{display:flex;gap:10px;align-items:center}
+  .ccbox .ccbar .left::before{content:"◆";color:var(--accent);font-size:13px}
+  .ccbox .ccbody{padding:14px 16px;line-height:1.7;color:#1a1a1a;flex:1;min-height:0}
+  .ccbox .ccbody .u{color:#444}
+  .ccbox .ccbody .a{color:#1a1a1a}
+  .ccbox .ccbody .tool{color:var(--blue);font-size:18px}
+  .ccbox .ccbody .ok{color:var(--ok);font-weight:500}
+  .ccbox .ccbody .add{color:var(--ok)}
+  .ccbox .ccbody .del{color:var(--warn)}
+  .ccbox .ccbody .dim{color:#888}
+  .ccbox .ccprompt{
+    border-top:1px solid var(--line);background:#fff;padding:10px 14px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .ccbox .ccprompt::before{content:"›";color:var(--accent);font-weight:700}
+  .ccbox .ccprompt .ph{color:#999}
+  .ccbox .ccprompt .cur{display:inline-block;width:7px;height:14px;background:#1a1a1a;margin-left:2px;animation:blink 1.05s steps(1) infinite;vertical-align:-2px}
+
+  .tag{
+    display:inline-block;padding:5px 11px;border:1px solid var(--line);border-radius:999px;
+    font-family:'JetBrains Mono',monospace;font-size:18px;color:#444;background:#fafafa;
+  }
+  .tag.accent{border-color:var(--accent);color:var(--accent)}
+  .tag.warn{border-color:#fecaca;color:var(--warn);background:#fff7f6}
+  .tag.blue{border-color:#bfdbfe;color:var(--blue);background:#f4f8ff}
+
+  .callout{
+    border-left:3px solid var(--accent);padding:16px 20px;background:#fffaf2;border-radius:0 6px 6px 0;
+    font-size:clamp(21px,1.7vw,25px);line-height:1.5;color:#222;
+  }
+  .callout.warn{border-color:var(--warn);background:#fff5f4}
+  .callout.blue{border-color:var(--blue);background:#f4f8ff}
+
+  blockquote{
+    font-weight:600;font-size:clamp(28px,3.6vw,48px);line-height:1.15;letter-spacing:-.02em;color:var(--ink);
+    max-width:24ch;
+  }
+  blockquote .mono{font-family:'JetBrains Mono',monospace;color:var(--accent-2);font-weight:500}
+  blockquote .hl{color:var(--accent)}
+  cite{font-style:normal;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted);display:block;margin-top:14px}
+
+  .demo{
+    border:1px solid var(--line);border-radius:6px;background:#fff;
+    padding:clamp(11px,1.2vw,16px);display:flex;flex-direction:column;gap:6px;
+    min-height:0;overflow:hidden;
+  }
+  .demo .icon{
+    width:28px;height:28px;border-radius:6px;background:#f4f8ff;
+    color:var(--blue);font-family:'JetBrains Mono',monospace;font-weight:700;
+    display:flex;align-items:center;justify-content:center;font-size:14px;
+    border:1px solid #bfdbfe;
+  }
+  .demo h3{font-size:clamp(20px,1.7vw,25px)}
+  .demo p{font-size:clamp(18px,1.5vw,22px);color:#444;line-height:1.45}
+  .demo code{font-family:'JetBrains Mono',monospace;background:#f5f5f5;padding:1px 5px;border-radius:3px;font-size:18px}
+
+  .mcp{
+    display:grid;grid-template-columns:1fr auto 1fr;gap:18px;align-items:center;
+    height:100%;font-family:'Inter',sans-serif;
+  }
+  .mcp .node{
+    border:1.5px solid var(--ink);border-radius:8px;padding:12px 14px;
+    background:#fff;text-align:center;
+  }
+  .mcp .node h3{font-size:19px;margin-bottom:4px}
+  .mcp .node p{font-size:16px;color:#666;font-family:'JetBrains Mono',monospace}
+  .mcp .center{border-color:var(--blue);background:#f4f8ff}
+  .mcp .center h3{color:var(--blue)}
+  .mcp .stack-nodes{display:flex;flex-direction:column;gap:10px}
+  .mcp .arrow{font-family:'JetBrains Mono',monospace;color:var(--blue);font-size:18px;text-align:center}
+
+  .mdfile{
+    background:#fafaf7;border:1px solid var(--line);border-radius:6px;
+    font-family:'JetBrains Mono',monospace;font-size:clamp(17px,1.4vw,20px);
+    line-height:1.65;padding:18px 22px;color:#1a1a1a;overflow:hidden;
+  }
+  .mdfile .h{color:var(--blue);font-weight:600}
+  .mdfile .c{color:#888}
+  .mdfile .k{color:var(--accent);font-weight:600}
+
+  .slide.active .reveal{animation:rise .65s cubic-bezier(.2,.7,.2,1) both}
+  .slide.active .r1{animation-delay:.05s}
+  .slide.active .r2{animation-delay:.16s}
+  .slide.active .r3{animation-delay:.27s}
+  .slide.active .r4{animation-delay:.38s}
+  .slide.active .r5{animation-delay:.49s}
+  .reveal{opacity:0;transform:translateY(10px)}
+  @keyframes rise{to{opacity:1;transform:none}}
+
+  /* Harness logo grid */
+  .harness-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;
+  }
+  .hlogo{
+    border:1px solid var(--line);border-radius:8px;background:#fff;
+    padding:14px 16px;display:flex;align-items:center;gap:12px;
+  }
+  .hlogo .mark{
+    width:46px;height:46px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:20px;color:#fff;flex-shrink:0;
+  }
+  .hlogo .name{font-weight:600;font-size:21px;color:#0a0a0a}
+  .hlogo .tagline{font-size:16px;color:#777;font-family:'JetBrains Mono',monospace;margin-top:2px}
+  .hlogo .text{display:flex;flex-direction:column}
+  .hlogo.h-cursor .mark{background:#000}
+  .hlogo.h-opencode .mark{background:#1a1a1a;color:#a78bfa}
+  .hlogo.h-hermes .mark{background:#7c3aed}
+  .hlogo.h-openclaw .mark{background:#0ea5a4}
+  .hlogo.h-aider .mark{background:#dc2626}
+  .hlogo.h-copilot .mark{background:#24292e}
+
+  /* Intro illustration */
+  .illus{
+    display:flex;align-items:center;justify-content:center;height:100%;padding:14px;
+  }
+  .illus svg{max-width:100%;height:auto;max-height:60vh}
+
+  .progress{position:fixed;left:0;right:0;bottom:0;height:2px;background:transparent;z-index:30}
+  .progress > i{display:block;height:100%;background:var(--accent);width:0;transition:width .35s ease}
+  .nav-hint{position:fixed;right:18px;bottom:14px;z-index:30;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+  .slide-counter{position:fixed;left:18px;bottom:14px;z-index:30;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+
+  @media (prefers-reduced-motion:reduce){
+    .slide,.reveal,.cursor,.badge::before,.ccbox .ccprompt .cur{animation:none!important;transition:opacity .2s ease!important;transform:none!important}
+  }
+  @media (max-width:780px){
+    .row2{grid-template-columns:1fr;gap:18px}
+    .grid.c3,.grid.c4{grid-template-columns:1fr 1fr}
+    .mcp{grid-template-columns:1fr;gap:10px}
+  }
+</style>
+</head>
+<body>
+
+<main class="deck" id="deck">
+
+  <!-- 01 PORTADA -->
+  <section class="slide" data-title="Portada">
+    <header class="top">
+      <span class="badge reveal r1">SESIÓN 01 · LIVE</span>
+      <span class="reveal r1">~/campus-virtual&nbsp;|&nbsp;claude --version&nbsp;2.x</span>
+    </header>
+    <div class="body row2">
+      <div>
+        <div class="eyebrow reveal r2">// ./welcome.sh</div>
+        <h1 class="hero reveal r2" style="margin-top:14px">Claude Code<br/><span class="under">Deep Dive</span><br/><span class="mono">$ &gt;_</span></h1>
+        <p class="lede reveal r3" style="margin-top:22px">Programar con una IA que vive en tu terminal: qué hace bien, qué hace mal, y dónde no debe entrar nunca.</p>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">claude · sonnet 4.6</div><div>~/campus-virtual</div></div>
+        <div class="ccbody">
+          <div class="dim">› leyendo CLAUDE.md…</div>
+          <div class="dim">› indexando 1.247 archivos PHP…</div>
+          <div><span class="ok">✓</span> listo. ¿qué hacemos?</div>
+        </div>
+        <div class="ccprompt"><span class="ph">explica el flujo de login de Moodle</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot">
+      <span># UEx · Servicio de Informática</span>
+      <span>~2 horas · 4 bloques · demo en vivo</span>
+    </footer>
+  </section>
+
+  <!-- 02 AGENDA -->
+  <section class="slide" data-title="Agenda">
+    <header class="top"><span class="badge">AGENDA</span><span>4 bloques + cierre</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// cat agenda.md</div>
+      <h2 class="reveal r1">La sesión se divide<br/>en <span class="hl">cuatro bloques</span>.</h2>
+      <div class="grid c4 reveal r2" style="margin-top:14px">
+        <div class="card"><span class="k">Bloque 01</span><h3>¿Qué es Claude Code?</h3><p>Modelo mental, instalación, modelos.</p></div>
+        <div class="card"><span class="k">Bloque 02</span><h3>Permisos y seguridad</h3><p>Qué sale, qué no meter, IA pública vs corporativa.</p></div>
+        <div class="card"><span class="k">Bloque 03</span><h3>Práctica con un proyecto</h3><p>Refactor seguro, tests, cuándo desconfiar.</p></div>
+        <div class="card"><span class="k">Bloque 04</span><h3>Claude Code avanzado</h3><p>CLAUDE.md, MCP, equipo, ecosistema.</p></div>
+      </div>
+      <p class="reveal r3" style="margin-top:8px;color:#555">Idea: que sepáis usar Claude Code para cualquier proyecto del Servicio.</p>
+    </div>
+    <footer class="bot"><span>bloques · cierre · Q&amp;A</span><span>← / →  navegar</span></footer>
+  </section>
+
+  <!-- 03 INTRO BLOQUE 1 -->
+  <section class="slide" data-title="Intro · Bloque 1">
+    <header class="top"><span class="badge">BLOQUE 01</span><span>¿qué es claude code?</span></header>
+    <div class="body row2">
+      <div class="stack" style="justify-content:center">
+        <div class="eyebrow reveal r1">// 01 · empezamos por el principio</div>
+        <blockquote class="reveal r1">Una IA que vive en<br/>tu <span class="hl">terminal</span> y edita<br/>tu código.</blockquote>
+        <cite class="reveal r2">— y por qué eso es muy distinto a un chatbot.</cite>
+        <p class="reveal r3" style="margin-top:18px;max-width:50ch">En este bloque: el modelo mental, instalación, los modelos de Anthropic, el plugin de PHPStorm, y una demo de qué puede hacer Claude más allá del código.</p>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">claude · sonnet 4.6</div><div>~/campus-virtual</div></div>
+        <div class="ccbody">
+          <div class="dim">╭───────────────────────────╮</div>
+          <div class="dim">│ ✻ Welcome to Claude Code  │</div>
+          <div class="dim">╰───────────────────────────╯</div>
+          <div class="u">› ¿qué hace este proyecto?</div>
+          <div class="tool">⏵ Read(README.md)</div>
+          <div class="tool">⏵ Read(package.json)</div>
+          <div class="tool">⏵ Glob(src/**/*.php)</div>
+          <div><span class="a">Es un plugin de Moodle para…</span></div>
+          <div class="dim">─ tokens 1.2k · sonnet 4.6 ─</div>
+        </div>
+        <div class="ccprompt"><span class="ph">sigue preguntando</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 01 · intro</span><span>~30 min</span></footer>
+  </section>
+
+  <!-- 04 ¿QUÉ ES UN LLM? -->
+  <section class="slide" data-title="Qué es un LLM">
+    <header class="top"><span class="badge">BLOQUE 01</span><span>conceptos</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// el cerebro</div>
+        <h2 class="reveal r1">Un <span class="hl">LLM</span> predice<br/>la siguiente palabra.</h2>
+        <p class="reveal r2">Un <b>Large Language Model</b> es una red neuronal entrenada con cantidades enormes de texto. Aprende patrones estadísticos: dado un contexto, ¿qué <b>token</b> es más probable que venga después?</p>
+        <ul class="bul reveal r3">
+          <li>No "razona" como una persona — predice texto plausible.</li>
+          <li>No tiene memoria entre conversaciones (salvo lo que tú le des).</li>
+          <li>No sabe nada posterior a su fecha de entrenamiento.</li>
+          <li>Puede <b>alucinar</b>: decir falsedades con seguridad.</li>
+        </ul>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">cómo funciona, simplificado</div><div>tokens</div></div>
+        <div class="ccbody">
+          <div class="dim">prompt:</div>
+          <div>"El Servicio de Informática mantiene"</div>
+          <div class="dim" style="margin-top:8px">predicciones del modelo:</div>
+          <div><span class="ok">→ "el"</span>     <span class="dim">42%</span></div>
+          <div>→ "Moodle"   <span class="dim">28%</span></div>
+          <div>→ "los"      <span class="dim">15%</span></div>
+          <div>→ "una"      <span class="dim">9%</span></div>
+          <div class="dim">→ ...</div>
+          <div style="margin-top:8px"><span class="a">elige uno · repite · genera texto</span></div>
+        </div>
+        <div class="ccprompt"><span class="ph">temperature, top-p, top-k controlan la elección</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 01 · 2/10</span></footer>
+  </section>
+
+  <!-- 05 ¿QUÉ ES UN AGENTE? -->
+  <section class="slide" data-title="Qué es un agente">
+    <header class="top"><span class="badge">BLOQUE 01</span><span>conceptos</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// del LLM al agente</div>
+        <h2 class="reveal r1">Un <span class="hl">agente</span> es un LLM<br/>con herramientas y un bucle.</h2>
+        <p class="reveal r2">El LLM por sí solo solo genera texto. Un <b>agente</b> le da capacidad de actuar: leer ficheros, ejecutar comandos, llamar APIs. Y un bucle que repite hasta terminar la tarea.</p>
+        <ul class="bul reveal r3">
+          <li><b>Modelo</b> · el cerebro que decide.</li>
+          <li><b>Herramientas</b> · lo que puede hacer (Read, Write, Bash…).</li>
+          <li><b>Bucle</b> · razonar → actuar → observar → repetir.</li>
+          <li><b>Permisos</b> · qué le dejas hacer sin preguntar.</li>
+        </ul>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">el bucle del agente</div><div>razonar · actuar · observar</div></div>
+        <div class="ccbody">
+          <div class="u">› objetivo: arregla el test que falla</div>
+          <div class="tool">⏵ piensa: necesito ver el test</div>
+          <div class="tool">⏵ Read(test/auth.test.js)</div>
+          <div class="tool">⏵ piensa: el error está en parseUser</div>
+          <div class="tool">⏵ Read(src/auth.js)</div>
+          <div class="tool">⏵ Edit(src/auth.js)</div>
+          <div class="tool">⏵ Bash(npm test)</div>
+          <div><span class="ok">✓</span> tests verdes · tarea completada</div>
+        </div>
+        <div class="ccprompt"><span class="ph">Claude Code es exactamente esto</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 01 · 3/10</span></footer>
+  </section>
+
+  <!-- 06 CC vs CHATBOT + AGENT HARNESS -->
+  <section class="slide" data-title="Claude Code vs chatbot">
+    <header class="top"><span class="badge">BLOQUE 01</span><span>agent harness</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// definamos el término</div>
+      <h2 class="reveal r1">Claude Code es un <span class="hl">agent harness</span>.</h2>
+      <div class="grid c2 reveal r2" style="margin-top:14px">
+        <div class="card warn">
+          <span class="k">no es</span>
+          <h3>Un chatbot en una pestaña</h3>
+          <p>Pegas código, copias la respuesta, la pegas en tu IDE. Lento y propenso a errores.</p>
+        </div>
+        <div class="card ok">
+          <span class="k">sí es</span>
+          <h3>Modelo + herramientas + bucle + permisos</h3>
+          <p>Un sistema que <b>razona y actúa</b>: lee ficheros, ejecuta comandos, edita código. Tú apruebas.</p>
+        </div>
+      </div>
+      <div class="reveal r3" style="margin-top:6px">
+        <p style="margin-bottom:6px"><b>Otros harnesses del ecosistema:</b></p>
+        <div class="harness-grid">
+          <div class="hlogo h-cursor"><div class="mark">⌘</div><div class="text"><div class="name">Cursor</div><div class="tagline">IDE-first</div></div></div>
+          <div class="hlogo h-opencode"><div class="mark">&lt;/&gt;</div><div class="text"><div class="name">OpenCode</div><div class="tagline">open source</div></div></div>
+          <div class="hlogo h-hermes"><div class="mark">H</div><div class="text"><div class="name">Hermes</div><div class="tagline">Nous Research</div></div></div>
+          <div class="hlogo h-openclaw"><div class="mark">◐</div><div class="text"><div class="name">OpenClaw</div><div class="tagline">framework</div></div></div>
+          <div class="hlogo h-aider"><div class="mark">A</div><div class="text"><div class="name">Aider</div><div class="tagline">git-native</div></div></div>
+          <div class="hlogo h-copilot"><div class="mark">⊕</div><div class="text"><div class="name">Copilot CLI</div><div class="tagline">GitHub</div></div></div>
+        </div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 01 · 1/8</span></footer>
+  </section>
+
+  <!-- 05 INSTALACIÓN + PLANES (antes era 06) -->
+  <section class="slide" data-title="Instalación y planes">
+    <header class="top"><span class="badge">BLOQUE 01</span><span>setup</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// setup en 2 minutos</div>
+        <h2 class="reveal r1">Instalación, auth y <span class="hl">planes</span>.</h2>
+        <ul class="bul reveal r2">
+          <li><b>CLI</b> · <span class="tag">npm i -g @anthropic-ai/claude-code</span></li>
+          <li><b>VS Code · JetBrains/PHPStorm</b> · plugins oficiales</li>
+          <li><b>App de escritorio</b> · macOS y Windows</li>
+          <li><b>Auth</b> · navegador → cuenta Anthropic</li>
+        </ul>
+        <div class="grid c3 reveal r3" style="margin-top:6px">
+          <div class="card"><span class="k">Planes</span><h3>Pro / Max / Team</h3><p>Cuota fija mensual. SSO en Team+.</p></div>
+          <div class="card"><span class="k">API directa</span><h3>Pay-per-token</h3><p>Sin cuota, control total, ideal para uso esporádico.</p></div>
+          <div class="card"><span class="k">Bedrock / Vertex</span><h3>En tu tenant</h3><p>Datos en AWS/GCP de tu organización. <b>Compliance.</b></p></div>
+        </div>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">claude · setup</div><div>~/campus-virtual</div></div>
+        <div class="ccbody">
+          <div><span class="dim">$</span> npm i -g @anthropic-ai/claude-code</div>
+          <div class="dim">added 1 package in 4s</div>
+          <div><span class="dim">$</span> claude</div>
+          <div class="dim">› auth: abre navegador…</div>
+          <div><span class="ok">✓</span> autenticado como pablorm@unex.es</div>
+          <div><span class="dim">$</span> cd ~/campus-virtual &amp;&amp; claude</div>
+        </div>
+        <div class="ccprompt"><span class="ph">listo</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 01 · 2/8</span></footer>
+  </section>
+
+  <!-- 06 PHPSTORM (movida una antes) -->
+  <section class="slide" data-title="PHPStorm">
+    <header class="top"><span class="badge">BLOQUE 01</span><span>phpstorm</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// pidido por el Servicio</div>
+      <h2 class="reveal r1">Claude Code en <span class="hl">PHPStorm</span>.</h2>
+      <div class="grid c2 reveal r2" style="margin-top:14px;gap:18px">
+        <div>
+          <ul class="bul">
+            <li><b>Plugin oficial</b> en el marketplace de JetBrains.</li>
+            <li>Se invoca desde la barra lateral o con un atajo.</li>
+            <li>Conoce el <b>fichero abierto</b> y el contexto del proyecto.</li>
+            <li>Diffs propuestos en el panel nativo de PHPStorm — los aceptas como un commit.</li>
+          </ul>
+        </div>
+        <div class="ccbox">
+          <div class="ccbar"><div class="left">PhpStorm · Claude</div><div>login.php</div></div>
+          <div class="ccbody">
+            <div class="tool">⏵ tool: read_file login.php</div>
+            <div class="tool">⏵ tool: search "auth_login_user"</div>
+            <div class="dim">— 3 ocurrencias en /lib/moodlelib.php</div>
+            <div><span class="ok">propongo:</span></div>
+            <div><span class="add">+ Logger::error($e-&gt;getMessage());</span></div>
+            <div class="dim">¿aplicar? [accept · edit · reject]</div>
+          </div>
+          <div class="ccprompt"><span class="ph">añade logging al fallo de login</span><span class="cur"></span></div>
+        </div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 01 · 3/8</span></footer>
+  </section>
+
+  <!-- 07 MODELOS ANTHROPIC -->
+  <section class="slide" data-title="Modelos Anthropic">
+    <header class="top"><span class="badge">BLOQUE 01</span><span>modelos</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// elegir cerebro</div>
+      <h2 class="reveal r1">Opus, Sonnet, <span class="hl">Haiku</span>.</h2>
+      <div class="grid c3 reveal r2" style="margin-top:14px">
+        <div class="card blue">
+          <span class="k">opus</span>
+          <h3>El más capaz</h3>
+          <p>Refactors grandes, debugging difícil, decisiones arquitectónicas. Más caro.</p>
+        </div>
+        <div class="card">
+          <span class="k">sonnet · default</span>
+          <h3>El estándar</h3>
+          <p>No es tan potente como Opus. Más barato. Tareas sencillas y mecánicas.</p>
+        </div>
+        <div class="card">
+          <span class="k">haiku</span>
+          <h3>Barato y rápido</h3>
+          <p>Muy poco capaz. Extremadamente barato. Renombrar, formatear, clasificar.</p>
+        </div>
+      </div>
+      <div class="callout blue reveal r3"><span class="tag blue">/model</span> cambia el modelo en mitad de la sesión.</div>
+    </div>
+    <footer class="bot"><span>bloque 01 · 4/8</span></footer>
+  </section>
+
+  <!-- 08 VIBE vs HERRAMIENTA -->
+  <section class="slide" data-title="Vibe vs herramienta">
+    <header class="top"><span class="badge">BLOQUE 01</span><span>dos formas de usarlo</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// elige tu modo</div>
+      <h2 class="reveal r1">"Vibe coding" vs <span class="mono">IA-as-tool</span>.</h2>
+      <div class="grid c2 reveal r2" style="margin-top:14px">
+        <div class="card warn">
+          <span class="k">vibe coding</span>
+          <h3>"Hazme una app que…"</h3>
+          <p>Aceptas todo sin leer. Bien para prototipos desechables. <b>No es recomendable más allá de proyectos personales.</b></p>
+        </div>
+        <div class="card ok">
+          <span class="k">IA como herramienta</span>
+          <h3>Tú diriges, la IA acelera</h3>
+          <p>Lees cada diff. Apruebas con criterio. <b>Sigues siendo responsable del código que entra al repo</b>.</p>
+        </div>
+      </div>
+      <div class="callout reveal r3" style="margin-top:14px">El curso entero asume el segundo modo. <b>La IA escribe, tú firmas.</b></div>
+    </div>
+    <footer class="bot"><span>bloque 01 · 5/8</span></footer>
+  </section>
+
+  <!-- 09 LOOP FUNDAMENTAL -->
+  <section class="slide" data-title="Loop fundamental">
+    <header class="top"><span class="badge">BLOQUE 01</span><span>el loop</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// el ciclo que se repite</div>
+        <h2 class="reveal r1">Describes → <span class="hl">lee</span> → propone → apruebas.</h2>
+        <p class="reveal r2">Ese ciclo se repite hasta que el cambio está hecho. La IA no toca nada que no le hayas dejado tocar.</p>
+        <ul class="bul reveal r3">
+          <li><b>Tú</b> describes el objetivo en lenguaje natural.</li>
+          <li><b>Claude</b> lee solo lo relevante (no todo el repo).</li>
+          <li><b>Claude</b> propone un diff y/o un comando.</li>
+          <li><b>Tú</b> apruebas, modificas o rechazas.</li>
+        </ul>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">claude · sonnet 4.6</div><div>~/campus-virtual</div></div>
+        <div class="ccbody">
+          <div class="u">› añade logging de errores en login.php</div>
+          <div class="tool">⏵ tool: read login.php (124 líneas)</div>
+          <div class="tool">⏵ tool: read lib/logger.php</div>
+          <div><span class="ok">propongo este cambio:</span></div>
+          <div><span class="add">+ require_once 'lib/logger.php';</span></div>
+          <div><span class="add">+ Logger::error($e-&gt;getMessage());</span></div>
+          <div class="dim">¿aplicar? [a · edit · n]</div>
+          <div class="u">› a</div>
+          <div><span class="ok">✓</span> aplicado · 2 líneas</div>
+        </div>
+        <div class="ccprompt"><span class="ph">qué más</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 01 · 6/8</span></footer>
+  </section>
+
+  <!-- 10 CLAUDE VIVE EN TU PC -->
+  <section class="slide" data-title="Claude vive en tu PC">
+    <header class="top"><span class="badge">BLOQUE 01</span><span>demo · más allá del código</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// no es solo código</div>
+      <h2 class="reveal r1">Claude <span class="hl">vive</span> en tu máquina.</h2>
+      <div class="grid c3 reveal r2" style="margin-top:14px;grid-template-rows:1fr 1fr;gap:12px">
+        <div class="demo"><div class="icon">W</div><h3>Buscar en internet</h3><p>"Última versión estable de Moodle y cambios."</p></div>
+        <div class="demo"><div class="icon">F</div><h3>Organizar ficheros</h3><p>Ordena <code>~/Descargas</code> por tipo y mes.</p></div>
+        <div class="demo"><div class="icon">📷</div><h3>Leer screenshots</h3><p>Pegas error → te lo interpreta.</p></div>
+        <div class="demo"><div class="icon">$</div><h3>Comandos del sistema</h3><p>Procesos, logs de systemd, espacio en disco.</p></div>
+        <div class="demo"><div class="icon">P</div><h3>PDFs y Office</h3><p>Lee manuales, extrae datos de facturas.</p></div>
+        <div class="demo"><div class="icon">@</div><h3>Tareas administrativas</h3><p>Borrador de circulares, actas, resúmenes.</p></div>
+      </div>
+      <div class="callout reveal r3" style="margin-top:6px">El harness es de código, pero el agente vive <b>en toda tu máquina</b>. Por eso el bloque 2 importa.</div>
+    </div>
+    <footer class="bot"><span>bloque 01 · 7/8 · demo</span></footer>
+  </section>
+
+  <!-- 11 HABLAR CON UN REPO + TRAMPA -->
+  <section class="slide" data-title="Hablar con un repo">
+    <header class="top"><span class="badge">BLOQUE 01</span><span>transición a seguridad</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// abrid un repo y hablad con él</div>
+        <h2 class="reveal r1">Sesiones, contexto<br/>y la <span class="hl">trampa</span>.</h2>
+        <ul class="bul reveal r2">
+          <li>Cada sesión arranca limpia.</li>
+          <li><b>CLAUDE.md</b> persiste — lo veremos luego.</li>
+          <li><span class="tag">/clear</span> resetea el contexto cuando se enreda.</li>
+        </ul>
+        <div class="callout warn reveal r3" style="margin-top:6px"><b>Pregunta trampa:</b> "¿cuál es la contraseña de la base de datos?" — Nos la da sin pestañear.</div>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">claude · demo</div><div>~/proyecto</div></div>
+        <div class="ccbody">
+          <div class="u">› ¿cuál es la contraseña de la BD?</div>
+          <div class="tool">⏵ tool: read .env</div>
+          <div><span class="a">la encuentro en <code style="background:#0a0a0a;color:#fff;padding:2px 6px;border-radius:3px">.env</code>:</span></div>
+          <div><span class="del">DB_PASSWORD=Sup3rS3cr3t!</span></div>
+          <div class="dim">¿necesitas algo más?</div>
+        </div>
+        <div class="ccprompt"><span class="ph">…</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 01 · 8/8</span></footer>
+  </section>
+
+  <!-- 12 INTRO BLOQUE 2 -->
+  <section class="slide" data-title="Intro · Bloque 2">
+    <header class="top"><span class="badge">BLOQUE 02</span><span>permisos y seguridad</span></header>
+    <div class="body row2">
+      <div class="stack" style="justify-content:center">
+        <div class="eyebrow reveal r1">// 02 · seguridad</div>
+        <blockquote class="reveal r1">Una IA con acceso a tu <span class="mono">terminal</span> es tan segura como las reglas que le pongas.</blockquote>
+        <cite class="reveal r2">— y la mayoría de problemas vienen de aquí, no del modelo.</cite>
+        <p class="reveal r3" style="margin-top:18px;max-width:50ch">Permisos, qué sale de tu máquina, qué no debe entrar nunca, IA pública vs corporativa, y configuración real para el Servicio.</p>
+      </div>
+      <div class="illus reveal r4">
+        <svg viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <defs>
+            <linearGradient id="shield2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#fef3c7"/>
+              <stop offset="1" stop-color="#fff"/>
+            </linearGradient>
+          </defs>
+          <path d="M160 30 L280 70 V160 C280 230 220 280 160 300 C100 280 40 230 40 160 V70 Z" fill="url(#shield2)" stroke="#0a0a0a" stroke-width="3"/>
+          <path d="M160 50 L260 82 V160 C260 218 210 262 160 280 C110 262 60 218 60 160 V82 Z" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="6 6"/>
+          <rect x="120" y="140" width="80" height="70" rx="6" fill="#fff" stroke="#0a0a0a" stroke-width="3"/>
+          <path d="M135 140 V120 C135 105 145 95 160 95 C175 95 185 105 185 120 V140" fill="none" stroke="#0a0a0a" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="160" cy="170" r="8" fill="#d97706"/>
+          <rect x="156" y="170" width="8" height="20" fill="#d97706"/>
+        </svg>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 02 · intro</span><span>~25 min</span></footer>
+  </section>
+
+  <!-- 13 PERMISOS -->
+  <section class="slide" data-title="Modelo de permisos">
+    <header class="top"><span class="badge">BLOQUE 02</span><span>permisos</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// tres niveles</div>
+      <h2 class="reveal r1">Modelo de <span class="hl">permisos</span>.</h2>
+      <div class="grid c3 reveal r2" style="margin-top:14px">
+        <div class="card ok">
+          <span class="k">manual · default</span>
+          <h3>Aprobación por acción</h3>
+          <p>Cada lectura, cada edición, cada comando: te lo pregunta. <b>Recomendado.</b></p>
+        </div>
+        <div class="card">
+          <span class="k">auto mode</span>
+          <h3>Clasificador interno</h3>
+          <p>Aprueba acciones de bajo riesgo, te interrumpe en las críticas. Buen balance una vez confías.</p>
+        </div>
+        <div class="card warn">
+          <span class="k">--dangerously-skip-permissions</span>
+          <h3>Salta todo</h3>
+          <p>Solo recomendado en contenedor o VM aislada. <b>Nunca en tu portátil con acceso a producción.</b></p>
+        </div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 02 · 1/5</span></footer>
+  </section>
+
+  <!-- 14 .ENV + QUÉ SALE -->
+  <section class="slide" data-title=".env y qué sale">
+    <header class="top"><span class="badge">BLOQUE 02</span><span>regla .env + data flow</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// arreglemos la trampa anterior</div>
+        <h2 class="reveal r1">Bloqueamos <span class="mono">.env</span> y volvemos a preguntar.</h2>
+        <ul class="bul ok reveal r2">
+          <li>Añadimos <span class="tag">"deny": ["Read(.env)"]</span> en <span class="tag">.claude/settings.json</span>.</li>
+          <li>Repetimos la pregunta — ahora se niega.</li>
+          <li>Las reglas son <b>contrato</b>, no preferencia.</li>
+        </ul>
+        <h3 class="reveal r3" style="margin-top:6px">Qué sale realmente:</h3>
+        <ul class="bul reveal r3">
+          <li>Tus prompts y los diffs propuestos.</li>
+          <li>Fragmentos de ficheros que abre.</li>
+          <li>Stdout de comandos que ejecuta.</li>
+        </ul>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">claude · post-deny</div><div>~/proyecto</div></div>
+        <div class="ccbody">
+          <div class="u">› ¿cuál es la contraseña de la BD?</div>
+          <div class="tool">⏵ tool: read .env</div>
+          <div class="del">✕ permission denied · regla local</div>
+          <div><span class="a">no puedo leer <code style="background:#0a0a0a;color:#fff;padding:2px 6px;border-radius:3px">.env</code>: hay una regla que lo bloquea.</span></div>
+          <div><span class="a">si necesitas configurar credenciales, hazlo tú directamente.</span></div>
+        </div>
+        <div class="ccprompt"><span class="ph">gracias</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 02 · 2/5</span></footer>
+  </section>
+
+  <!-- 15 PII / NO METER -->
+  <section class="slide" data-title="Qué NO meter">
+    <header class="top"><span class="badge">BLOQUE 02</span><span>importante</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// reglas no escritas</div>
+      <h2 class="reveal r1">Qué <span class="hl">NO</span> debe entrar en un prompt.</h2>
+      <div class="grid c2 reveal r2" style="margin-top:14px">
+        <ul class="bul warn">
+          <li><b>Datos personales</b> de alumnado, PDI, PAS (DNIs, expedientes, notas).</li>
+          <li><b>Configuraciones</b> con credenciales, IPs internas, tokens.</li>
+          <li><b>Tickets</b> con datos identificables.</li>
+        </ul>
+        <ul class="bul warn">
+          <li><b>ENS medio/alto</b> y material clasificado.</li>
+          <li><b>Contratos, licitaciones</b>, documentación legal.</li>
+          <li><b>Backups o dumps</b> de bases de datos de producción.</li>
+        </ul>
+      </div>
+      <div class="callout warn reveal r3" style="margin-top:14px"><b>Regla simple:</b> si no lo mandarías por correo a un proveedor externo, no lo pegues en una IA.</div>
+    </div>
+    <footer class="bot"><span>bloque 02 · 3/5</span></footer>
+  </section>
+
+  <!-- 16 PUBLICA VS CORPORATIVA -->
+  <section class="slide" data-title="Pública vs corporativa">
+    <header class="top"><span class="badge">BLOQUE 02</span><span>la herramienta correcta para cada dato</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// shadow AI</div>
+      <h2 class="reveal r1">IA pública vs <span class="hl">corporativa</span>.</h2>
+      <div class="grid c3 reveal r2" style="margin-top:14px">
+        <div class="card warn">
+          <span class="k">pública gratis</span>
+          <h3>ChatGPT free, Gemini free</h3>
+          <p>Sin DPA. Datos pueden usarse. <b>Solo cosas públicas.</b></p>
+        </div>
+        <div class="card">
+          <span class="k">pública de pago</span>
+          <h3>Claude Pro, ChatGPT Plus</h3>
+          <p>Mejor política. Código sin datos sensibles.</p>
+        </div>
+        <div class="card ok">
+          <span class="k">corporativa</span>
+          <h3>Copilot M365, Amazon Bedrock, Claude Enterprise</h3>
+          <p>Dentro del tenant. SSO. Auditoría. Aquí sí entran datos internos.</p>
+        </div>
+      </div>
+      <div class="callout warn reveal r3" style="margin-top:14px"><b>Shadow AI:</b> el riesgo real no es Claude Code mal configurado. Es pegar logs con información sensible en ChatGPT free para "ver qué falla".</div>
+    </div>
+    <footer class="bot"><span>bloque 02 · 4/5</span></footer>
+  </section>
+
+  <!-- 17 CONFIGURACIÓN settings.json -->
+  <section class="slide" data-title="Configuración">
+    <header class="top"><span class="badge">BLOQUE 02</span><span>aislamiento, env scrub, secretos</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// .claude/settings.json</div>
+        <h2 class="reveal r1">Configuración <span class="hl">real</span>.</h2>
+        <div class="grid c2 reveal r2" style="gap:10px">
+          <div class="card blue">
+            <span class="k">global · usuario</span>
+            <h3><span class="tag blue">~/.claude/settings.json</span></h3>
+            <p>Tus preferencias en cualquier proyecto: tema, modelo por defecto, atajos. <b>Solo afecta a tu máquina.</b></p>
+          </div>
+          <div class="card ok">
+            <span class="k">proyecto · equipo</span>
+            <h3><span class="tag">.claude/settings.json</span></h3>
+            <p>Reglas del repo: <b>deny</b>, sandbox, hooks de auditoría. Va al <b>git</b> — todo el equipo lo hereda.</p>
+          </div>
+        </div>
+        <ul class="bul reveal r3" style="margin-top:4px">
+          <li><b>permissions.deny</b> — lista negra de comandos y rutas.</li>
+          <li><b>Sandbox</b> + <span class="tag">sandbox.failIfUnavailable</span>.</li>
+          <li><b>CLAUDE_CODE_SUBPROCESS_ENV_SCRUB</b> · limpia credenciales.</li>
+          <li><b>Hooks de auditoría</b> · log de cada acción.</li>
+        </ul>
+      </div>
+      <div class="terminal reveal r3">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <div class="com"># .claude/settings.json</div>
+        <div>{</div>
+        <div>&nbsp;&nbsp;"permissions": {</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;"deny": [</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Bash(rm -rf:*)",</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Bash(curl *prod*:*)",</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Read(.env)",</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Read(config.php)"</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;]</div>
+        <div>&nbsp;&nbsp;},</div>
+        <div>&nbsp;&nbsp;"env": {</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;"CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1"</div>
+        <div>&nbsp;&nbsp;}</div>
+        <div>}<span class="cursor"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 02 · 5/5</span></footer>
+  </section>
+
+  <!-- 18 INTRO BLOQUE 3 -->
+  <section class="slide" data-title="Intro · Bloque 3">
+    <header class="top"><span class="badge">BLOQUE 03</span><span>práctica</span></header>
+    <div class="body row2">
+      <div class="stack" style="justify-content:center">
+        <div class="eyebrow reveal r1">// 03 · manos al teclado</div>
+        <blockquote class="reveal r1">Vamos a abrir un proyecto <span class="mono">desordenado</span><br/>y dejarlo un poco mejor.</blockquote>
+        <cite class="reveal r2">— explorar, planificar, implementar, testear.</cite>
+        <p class="reveal r3" style="margin-top:18px;max-width:50ch">Repo de juguete sin tests, sin estructura, sin docs. Vamos a usar skills, modo plan, rewind y cuándo desconfiar.</p>
+      </div>
+      <div class="illus reveal r4">
+        <svg viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <g font-family="JetBrains Mono, monospace" font-size="15" font-weight="500" fill="#0a0a0a">
+            <g transform="translate(40 50)">
+              <circle cx="14" cy="14" r="13" fill="#15803d" stroke="#0a0a0a" stroke-width="2"/>
+              <path d="M7 14 L12 19 L21 9" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <text x="40" y="19">Explorar</text>
+            </g>
+            <line x1="54" y1="78" x2="54" y2="106" stroke="#0a0a0a" stroke-width="2" stroke-dasharray="3 4"/>
+            <g transform="translate(40 110)">
+              <circle cx="14" cy="14" r="13" fill="#15803d" stroke="#0a0a0a" stroke-width="2"/>
+              <path d="M7 14 L12 19 L21 9" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <text x="40" y="19">Planificar</text>
+            </g>
+            <line x1="54" y1="138" x2="54" y2="166" stroke="#0a0a0a" stroke-width="2" stroke-dasharray="3 4"/>
+            <g transform="translate(40 170)">
+              <circle cx="14" cy="14" r="13" fill="#d97706" stroke="#0a0a0a" stroke-width="2"/>
+              <path d="M14 6 L14 22 M6 14 L22 14" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+              <text x="40" y="19">Implementar</text>
+            </g>
+            <line x1="54" y1="198" x2="54" y2="226" stroke="#0a0a0a" stroke-width="2" stroke-dasharray="3 4"/>
+            <g transform="translate(40 230)">
+              <circle cx="14" cy="14" r="13" fill="#fff" stroke="#0a0a0a" stroke-width="2"/>
+              <text x="40" y="19">Testear</text>
+            </g>
+            <g transform="translate(40 270)" opacity=".55">
+              <circle cx="14" cy="14" r="13" fill="#fff" stroke="#0a0a0a" stroke-width="2" stroke-dasharray="2 3"/>
+              <text x="40" y="19">Repetir</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 03 · intro</span><span>~40 min</span></footer>
+  </section>
+
+  <!-- 19 EL REPO DESORDENADO -->
+  <section class="slide" data-title="Repo desordenado">
+    <header class="top"><span class="badge">BLOQUE 03</span><span>el proyecto</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// con qué vamos a trabajar</div>
+        <h2 class="reveal r1">Un repo <span class="hl">realista</span>: feo y sin tests.</h2>
+        <ul class="bul warn reveal r2">
+          <li>Sin tests, sin estructura, sin README.</li>
+          <li>Una función gigante de 300 líneas.</li>
+          <li>Una dependencia rota que nadie ha tocado.</li>
+          <li>Logs con datos sensibles a stdout.</li>
+        </ul>
+        <p class="reveal r3" style="margin-top:8px">El típico que os llega cuando cambia el responsable.</p>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">claude · explorando</div><div>~/legacy-app</div></div>
+        <div class="ccbody">
+          <div class="u">› dame un mapa de este proyecto</div>
+          <div class="tool">⏵ tool: glob "**/*.php"</div>
+          <div class="tool">⏵ tool: read package.json</div>
+          <div class="tool">⏵ tool: read src/index.php</div>
+          <div><span class="a">resumen:</span></div>
+          <div>1. backend Node + Express</div>
+          <div>2. auth con sesiones (no JWT)</div>
+          <div>3. mysql vía mysql2, sin ORM</div>
+          <div><span class="del">4. ningún test</span></div>
+          <div><span class="del">5. logs a stdout, sin formato</span></div>
+        </div>
+        <div class="ccprompt"><span class="ph">…</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 03 · 1/7</span></footer>
+  </section>
+
+  <!-- 20 EXPLORAR + /skills -->
+  <section class="slide" data-title="Explorar + /skills">
+    <header class="top"><span class="badge">BLOQUE 03</span><span>explorar con skills</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// /skills al rescate</div>
+      <h2 class="reveal r1">Explorar y <span class="hl">documentar</span></h2>
+      <div class="grid c2 reveal r2" style="margin-top:14px;align-items:start">
+        <div class="card blue">
+          <span class="k">qué le pides</span>
+          <h3>Mapa, entrada, riesgos</h3>
+          <p>"Hazme un mapa en 10 líneas." · "¿Cuál es el punto de entrada?" · "¿Qué partes me preocuparían si fuera nuevo?"</p>
+        </div>
+        <div class="card ok">
+          <span class="k">/skills</span>
+          <h3>repo-describe</h3>
+          <p>Skill que recorre el repo y produce un README inicial + un diagrama Mermaid de arquitectura. <b>Cinco minutos, listo.</b></p>
+        </div>
+      </div>
+      <div class="terminal reveal r3" style="margin-top:6px">
+        <div class="com"># skill que se invoca con un comando</div>
+        <div><span class="p">›</span> /skills run repo-describe</div>
+        <div class="dim">› analizando 1.247 ficheros…</div>
+        <div class="ok">✓ README.md generado (84 líneas)</div>
+        <div class="ok">✓ docs/architecture.md con diagrama Mermaid</div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 03 · 2/7</span></footer>
+  </section>
+
+  <!-- 21 PLAN + REWIND -->
+  <section class="slide" data-title="Plan + rewind">
+    <header class="top"><span class="badge">BLOQUE 03</span><span>refactor seguro</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// pensar antes de tocar</div>
+      <h2 class="reveal r1"><span class="mono">/plan</span> antes. <span class="hl">/rewind</span> si la lía.</h2>
+      <div class="grid c2 reveal r2" style="margin-top:14px">
+        <div class="card">
+          <span class="k">/plan</span>
+          <h3>Pídele un plan, no acción</h3>
+          <p>Antes de ejecutar nada, le pides el plan. Lo lees. Lo discutís. Solo entonces "venga, hazlo".</p>
+        </div>
+        <div class="card">
+          <span class="k">/rewind · checkpoints</span>
+          <h3>Rollback instantáneo</h3>
+          <p>Guarda estado antes de cada cambio. Si el refactor sale mal, vuelves atrás como un <span class="tag">git stash</span> automático.</p>
+        </div>
+      </div>
+      <div class="callout reveal r3" style="margin-top:14px">Combo: <b>plan → ejecuta → checkpoint → siguiente paso</b>. Si algo huele mal, <span class="tag accent">/rewind</span>.</div>
+    </div>
+    <footer class="bot"><span>bloque 03 · 3/7</span></footer>
+  </section>
+
+  <!-- 22 SKILLS DE CUALQUIER INTERACCIÓN -->
+  <section class="slide" data-title="Crear skills al vuelo">
+    <header class="top"><span class="badge">BLOQUE 03</span><span>aprende de ti</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// si lo has hecho una vez, ya es una skill</div>
+        <h2 class="reveal r1">Cualquier interacción<br/>se convierte en una <span class="hl">skill</span>.</h2>
+        <p class="reveal r2">Cuando termines una tarea que crees que vais a repetir, dile a Claude: <b>"convierte esto en una skill"</b>. Empaqueta los pasos, las herramientas y las decisiones en un comando reusable.</p>
+        <ul class="bul reveal r3">
+          <li>Notáis que repetís un prompt → ya tenéis una skill candidata.</li>
+          <li>Vive en <span class="tag">.claude/skills/</span> · va al git con el repo.</li>
+          <li>La invoca cualquier compañero con <span class="tag">/skill-name</span>.</li>
+          <li>Si no funciona bien, le pides a Claude que la mejore.</li>
+        </ul>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">claude · creando skill</div><div>al vuelo</div></div>
+        <div class="ccbody">
+          <div class="dim">— acabamos de hacer un release de plugin Moodle —</div>
+          <div class="u">› convierte lo que acabamos de hacer en una skill</div>
+          <div class="tool">⏵ analizando los últimos 12 turnos…</div>
+          <div class="tool">⏵ extrayendo pasos: bump version, changelog,</div>
+          <div class="tool">  zip, subida, etiqueta git…</div>
+          <div class="add">+ .claude/skills/moodle-plugin-release/</div>
+          <div class="add">  ├── SKILL.md</div>
+          <div class="add">  └── scripts/release.sh</div>
+          <div><span class="ok">✓</span> creada · invocala con <code style="background:#0a0a0a;color:#fff;padding:2px 6px;border-radius:3px">/moodle-plugin-release</code></div>
+        </div>
+        <div class="ccprompt"><span class="ph">la próxima vez será un solo comando</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 03 · 4/7</span></footer>
+  </section>
+
+  <!-- 23 CUANDO SE ATASCA -->
+  <section class="slide" data-title="Cuando se atasca">
+    <header class="top"><span class="badge">BLOQUE 03</span><span>contexto y modelos</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// realidad cotidiana</div>
+      <h2 class="reveal r1">Cuando se <span class="hl">atasca</span>.</h2>
+      <div class="grid c3 reveal r2" style="margin-top:14px">
+        <div class="card blue">
+          <span class="k">/new</span>
+          <h3>Sesión nueva</h3>
+          <p>Abre una sesión limpia <b>sin perder la anterior</b> — la dejas atrás y arrancas otra para una tarea distinta. Lo que más vais a usar.</p>
+        </div>
+        <div class="card blue">
+          <span class="k">/compact</span>
+          <h3>Resume y libera</h3>
+          <p>Sesión larga, contexto saturado. Resume lo importante y sigues sin perder el hilo.</p>
+        </div>
+        <div class="card blue">
+          <span class="k">/model</span>
+          <h3>Cambiar de cerebro</h3>
+          <p>Saltar a Opus para un problema concreto y volver a Sonnet. Pagas por lo que usas.</p>
+        </div>
+      </div>
+      <div class="callout reveal r3" style="margin-top:14px"><b>Señales de que toca cortar:</b> empieza a contradecirse, repite el mismo error, propone cambios cada vez más amplios. <span class="tag accent">/new</span> y replanteas.</div>
+    </div>
+    <footer class="bot"><span>bloque 03 · 5/7</span></footer>
+  </section>
+
+  <!-- 24 CUÁNDO NO USAR -->
+  <section class="slide" data-title="Cuándo NO usarlo">
+    <header class="top"><span class="badge">BLOQUE 03</span><span>contrapeso</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// contrapeso honesto</div>
+      <h2 class="reveal r1">Cuándo <span class="hl">NO</span> usar Claude Code.</h2>
+      <div class="grid c2 reveal r2" style="margin-top:14px">
+        <ul class="bul warn">
+          <li>Comandos de 5 segundos que ya sabes hacer.</li>
+          <li>Decisiones arquitectónicas — eso es tuyo.</li>
+          <li>Código crítico sin tests previos.</li>
+        </ul>
+        <ul class="bul warn">
+          <li>Scripts de un solo uso que escribes en 30s.</li>
+          <li>Cuando vas con prisa y no vas a leer los diffs.</li>
+          <li>Cuando lo que necesitas es <b>pensar</b>, no teclear.</li>
+        </ul>
+      </div>
+      <div class="callout warn reveal r3" style="margin-top:14px">No usarlo a veces es la decisión correcta. <b>Una herramienta no es un dogma.</b></div>
+    </div>
+    <footer class="bot"><span>bloque 03 · 6/7</span></footer>
+  </section>
+
+  <!-- 25 CUANDO DESCONFIAR -->
+  <section class="slide" data-title="Cuándo desconfiar">
+    <header class="top"><span class="badge">BLOQUE 03</span><span>verificar &gt; escribir</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// la parte que nadie enseña</div>
+      <h2 class="reveal r1">Cuándo <span class="hl">desconfiar</span>.</h2>
+      <div class="grid c3 reveal r2" style="margin-top:14px">
+        <div class="card warn">
+          <span class="k">señal 01</span>
+          <h3>Inventa funciones</h3>
+          <p>Llama a métodos que no existen en la librería. Lo dice con total seguridad. <b>Verifica siempre.</b></p>
+        </div>
+        <div class="card warn">
+          <span class="k">señal 02</span>
+          <h3>Borra lo que no entiende</h3>
+          <p>Si no ve para qué sirve un fichero, propone eliminarlo. Léete cada borrado.</p>
+        </div>
+        <div class="card warn">
+          <span class="k">señal 03</span>
+          <h3>"Ya está, funciona"</h3>
+          <p>Sin haber ejecutado los tests. Frase de moda en errores graves.</p>
+        </div>
+      </div>
+      <div class="callout warn reveal r3" style="margin-top:14px">Tu trabajo cambia de <b>escribir</b> a <b>verificar</b>. Más rápido, igual de exigente.</div>
+    </div>
+    <footer class="bot"><span>bloque 03 · 7/7</span></footer>
+  </section>
+
+  <!-- 26 INTRO BLOQUE 4 -->
+  <section class="slide" data-title="Intro · Bloque 4">
+    <header class="top"><span class="badge">BLOQUE 04</span><span>avanzado</span></header>
+    <div class="body row2">
+      <div class="stack" style="justify-content:center">
+        <div class="eyebrow reveal r1">// 04 · de usuario a operador</div>
+        <blockquote class="reveal r1">De <span class="hl">usuario</span> a <span class="mono">operador</span>.</blockquote>
+        <cite class="reveal r2">— cómo Claude Code se convierte en una plataforma del Servicio.</cite>
+        <p class="reveal r3" style="margin-top:18px;max-width:50ch">Contexto persistente, agentes, MCP, automatización, ecosistema, y workflow en equipo.</p>
+      </div>
+      <div class="illus reveal r4">
+        <svg viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <g font-family="JetBrains Mono, monospace" font-size="13" font-weight="600">
+            <rect x="10" y="240" width="300" height="42" rx="6" fill="#fff" stroke="#0a0a0a" stroke-width="3"/>
+            <text x="160" y="266" text-anchor="middle" fill="#0a0a0a">Claude Code</text>
+            <rect x="20" y="190" width="280" height="42" rx="6" fill="#f4f8ff" stroke="#2563eb" stroke-width="2.5"/>
+            <text x="160" y="216" text-anchor="middle" fill="#2563eb">CLAUDE.md · permisos</text>
+            <rect x="30" y="140" width="260" height="42" rx="6" fill="#fffaf2" stroke="#d97706" stroke-width="2.5"/>
+            <text x="160" y="166" text-anchor="middle" fill="#d97706">skills · hooks · comandos</text>
+            <rect x="40" y="90" width="240" height="42" rx="6" fill="#f4fbf6" stroke="#15803d" stroke-width="2.5"/>
+            <text x="160" y="116" text-anchor="middle" fill="#15803d">subagentes · MCP</text>
+            <rect x="50" y="40" width="220" height="42" rx="6" fill="#0a0a0a" stroke="#0a0a0a" stroke-width="2.5"/>
+            <text x="160" y="66" text-anchor="middle" fill="#fff">plataforma</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 04 · intro</span><span>~25 min</span></footer>
+  </section>
+
+  <!-- 27 CLAUDE.md PLANTILLA -->
+  <section class="slide" data-title="CLAUDE.md plantilla">
+    <header class="top"><span class="badge">BLOQUE 04</span><span>entregable</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// el fichero más útil del ecosistema</div>
+        <h2 class="reveal r1"><span class="mono">CLAUDE.md</span><br/>como plantilla<br/>de proyectos.</h2>
+        <ul class="bul reveal r2">
+          <li>Va en la raíz del repo (o <span class="tag">~/.claude/CLAUDE.md</span> global).</li>
+          <li>Se carga <b>automáticamente</b> en cada sesión si se encuentra en la raíz de donde abramos Claude.</li>
+          <li>Convenciones, comandos típicos, "qué no toques".</li>
+        </ul>
+      </div>
+      <div class="mdfile reveal r3">
+        <div class="c"># CLAUDE.md — Plugin Moodle Campus Virtual UEx</div>
+        <div>&nbsp;</div>
+        <div class="h">## Stack</div>
+        <div>- PHP 8.2 · Moodle 4.5 · MariaDB 10.11</div>
+        <div>- PSR-12, line length 120</div>
+        <div>&nbsp;</div>
+        <div class="h">## Comandos</div>
+        <div>- Tests: <span class="k">vendor/bin/phpunit</span></div>
+        <div>- Lint:  <span class="k">vendor/bin/phpcs --standard=moodle</span></div>
+        <div>- Local: <span class="k">docker compose up -d</span></div>
+        <div>&nbsp;</div>
+        <div class="h">## NO TOCAR</div>
+        <div>- <span class="k">config.php</span> · <span class="k">.env</span> · <span class="k">/local/secret/</span></div>
+        <div>- Migraciones aplicadas (<span class="k">db/upgrade.php</span>)</div>
+        <div>&nbsp;</div>
+        <div class="h">## Estilo</div>
+        <div>- Strings en español, identificadores en inglés.</div>
+        <div>- No introducir JS sin justificación.</div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 04 · 1/8</span></footer>
+  </section>
+
+  <!-- 28 SUBAGENTES -->
+  <section class="slide" data-title="Subagentes">
+    <header class="top"><span class="badge">BLOQUE 04</span><span>claude llamando a claude</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// claude se invoca a sí mismo</div>
+        <h2 class="reveal r1"><span class="hl">Subagentes</span>.</h2>
+        <p class="reveal r2">Claude puede invocarse a sí mismo igual que tú lo invocas. Útil para <b>paralelizar</b>, <b>aislar contexto</b>, o <b>delegar</b>.</p>
+        <ul class="bul reveal r3">
+          <li>Un subagente explora <span class="tag">/src</span>, otro <span class="tag">/tests</span>.</li>
+          <li>Un subagente "investigador" no contamina la sesión principal.</li>
+          <li>Tareas pesadas que tardan minutos sin bloquearte.</li>
+        </ul>
+        <p class="reveal r4" style="color:#555">Cuándo NO: cuando un solo prompt bien escrito basta. Casi siempre.</p>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">claude · orquestando</div><div>2 subagentes</div></div>
+        <div class="ccbody">
+          <div class="u">› audita seguridad de los plugins de auth</div>
+          <div class="tool">⏵ spawn agent: review-auth-saml</div>
+          <div class="tool">⏵ spawn agent: review-auth-cas</div>
+          <div class="dim">› esperando 2 reportes…</div>
+          <div class="ok">✓ saml: 2 hallazgos (1 medio, 1 bajo)</div>
+          <div class="ok">✓ cas:  1 hallazgo (medio)</div>
+          <div><span class="a">consolidando informe…</span></div>
+        </div>
+        <div class="ccprompt"><span class="ph">muéstralo</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 04 · 2/8</span></footer>
+  </section>
+
+  <!-- 29 SKILLS HOOKS COMANDOS -->
+  <section class="slide" data-title="Skills, hooks, comandos">
+    <header class="top"><span class="badge">BLOQUE 04</span><span>plataforma a medida</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// extender claude code</div>
+      <h2 class="reveal r1">Skills, <span class="hl">hooks</span>, comandos.</h2>
+      <div class="grid c3 reveal r2" style="margin-top:14px">
+        <div class="card">
+          <span class="k">skills</span>
+          <h3>Capacidades reutilizables</h3>
+          <p>Generar tests, revisar PRs, hacer un release. Compartibles entre proyectos.</p>
+        </div>
+        <div class="card">
+          <span class="k">hooks</span>
+          <h3>Triggers automáticos</h3>
+          <p>Al guardar un fichero, al cerrar sesión, antes de un commit. La automatización sin tocar Claude.</p>
+        </div>
+        <div class="card">
+          <span class="k">comandos</span>
+          <h3>Atajos del equipo</h3>
+          <p><span class="tag">/moodle-plugin-review</span>, <span class="tag">/deploy-staging</span>. Los crea quien sepa, los usa todo el equipo.</p>
+        </div>
+      </div>
+      <p class="reveal r3" style="margin-top:8px;color:#555">No hace falta usar nada de esto al principio. Aparecen solos cuando notáis que repetís el mismo prompt.</p>
+    </div>
+    <footer class="bot"><span>bloque 04 · 3/8</span></footer>
+  </section>
+
+  <!-- 30 SKILLHUB / COMUNIDAD -->
+  <section class="slide" data-title="SkillHub y comunidad">
+    <header class="top"><span class="badge">BLOQUE 04</span><span>no estáis solos</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// la comunidad ya lo ha hecho</div>
+      <h2 class="reveal r1">SkillHub y repos de la <span class="hl">comunidad</span>.</h2>
+      <div class="grid c3 reveal r2" style="margin-top:14px">
+        <div class="card"><span class="k">SkillHub</span><h3>Oficial</h3><p>Catálogo curado de skills. Buen sitio para empezar.</p></div>
+        <div class="card"><span class="k">everything-claude-code</span><h3>Repo de la comunidad</h3><p>Skills, hooks, agentes ya hechos. Para inspirarse y forkear.</p></div>
+        <div class="card"><span class="k">marketplaces</span><h3>De terceros</h3><p>Plugins externos. Más flexibles, menos garantías.</p></div>
+      </div>
+      <div class="callout warn reveal r3" style="margin-top:14px"><b>Antes de instalar una skill ajena:</b> leed el código. Atención a hooks que escriben en disco o lanzan red. Aplica el mismo criterio que con un paquete npm.</div>
+    </div>
+    <footer class="bot"><span>bloque 04 · 4/8</span></footer>
+  </section>
+
+  <!-- 31 MCP -->
+  <section class="slide" data-title="MCP">
+    <header class="top"><span class="badge">BLOQUE 04</span><span>conectar claude a vuestros sistemas</span></header>
+    <div class="body row2 top-align" style="padding-top:8px">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// model context protocol</div>
+        <h2 class="reveal r1"><span class="mono">MCP</span> — el <span class="hl">USB-C</span> de la IA.</h2>
+        <p class="reveal r2">Estándar para conectar el agente a herramientas externas. Casos UEx:</p>
+        <ul class="bul reveal r3">
+          <li><b>BD de Moodle</b> (read-only): "¿cuántos logins fallidos esta semana?"</li>
+          <li><b>GitHub/GitLab</b>: leer issues, comentar PRs.</li>
+          <li><b>Sistema de tickets</b>: clasificar y agrupar.</li>
+          <li><b>Confluence / wiki</b>: que conozca vuestra documentación.</li>
+        </ul>
+        <div class="callout warn reveal r4" style="margin-top:6px">Cada MCP es una <b>puerta nueva</b>. Mismo principio: mínimo privilegio.</div>
+      </div>
+      <div class="mcp reveal r4">
+        <div class="stack-nodes">
+          <div class="node center"><h3>Claude</h3><p>agente</p></div>
+        </div>
+        <div class="arrow">⇄ MCP ⇄</div>
+        <div class="stack-nodes">
+          <div class="node"><h3>Moodle DB</h3><p>read-only</p></div>
+          <div class="node"><h3>GitHub</h3><p>issues · PRs</p></div>
+          <div class="node"><h3>CAU tickets</h3><p>clasificar</p></div>
+          <div class="node"><h3>Wiki interna</h3><p>buscar</p></div>
+        </div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 04 · 5/8</span></footer>
+  </section>
+
+  <!-- 32 WORKFLOW EQUIPO -->
+  <section class="slide" data-title="Workflow en equipo">
+    <header class="top"><span class="badge">BLOQUE 04</span><span>compartir .claude/ por git</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// la config es código</div>
+        <h2 class="reveal r1">Compartir <span class="mono">.claude/</span><br/>por <span class="hl">git</span>.</h2>
+        <ul class="bul reveal r2">
+          <li><b>.claude/settings.json</b> y <b>CLAUDE.md</b> → al repo.</li>
+          <li><b>.claude/skills/</b> y <b>.claude/commands/</b> → al repo.</li>
+          <li><b>.claude/settings.local.json</b> → gitignored, preferencias personales.</li>
+        </ul>
+        <div class="callout blue reveal r3" style="margin-top:8px">Las reglas de seguridad (deny rules) son <b>contrato del equipo</b>, no preferencia individual. Onboarding: <span class="tag">git clone</span> → hereda las reglas.</div>
+      </div>
+      <div class="terminal reveal r4">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <div class="com"># estructura recomendada</div>
+        <div>campus-virtual/</div>
+        <div>├── .claude/</div>
+        <div>│   ├── <span class="ok">settings.json</span>     <span class="dim"># versionado</span></div>
+        <div>│   ├── <span class="ok">skills/</span>            <span class="dim"># versionado</span></div>
+        <div>│   ├── <span class="ok">commands/</span>          <span class="dim"># versionado</span></div>
+        <div>│   └── <span class="err">settings.local.json</span> <span class="dim"># gitignored</span></div>
+        <div>├── <span class="ok">CLAUDE.md</span>              <span class="dim"># versionado</span></div>
+        <div>├── .gitignore</div>
+        <div>└── ...</div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 04 · 6/8</span></footer>
+  </section>
+
+  <!-- 33 REVISIÓN DE PRs -->
+  <section class="slide" data-title="Revisión de PRs">
+    <header class="top"><span class="badge">BLOQUE 04</span><span>code review</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// primer pase automático</div>
+      <h2 class="reveal r1">Revisión de <span class="hl">PRs</span> con Claude.</h2>
+      <div class="grid c2 reveal r2" style="margin-top:14px">
+        <div class="card blue">
+          <span class="k">cómo</span>
+          <h3>/review o skill dedicada</h3>
+          <p>Comentarios automáticos en PRs, etiquetado, sugerencias de cambio. Integrable con GitHub Actions.</p>
+        </div>
+        <div class="card ok">
+          <span class="k">cuándo es útil</span>
+          <h3>Casos del Servicio</h3>
+          <p>PRs largos en plugins de Moodle. Code review en horario raro. Primer pase antes de la revisión humana.</p>
+        </div>
+      </div>
+      <div class="callout reveal r3" style="margin-top:14px">No sustituye al humano. Filtra ruido (lint, typos, patrones obvios) para que el reviewer humano se centre en lo que importa.</div>
+    </div>
+    <footer class="bot"><span>bloque 04 · 7/8</span></footer>
+  </section>
+
+  <!-- 34 SYSADMIN / CAU -->
+  <section class="slide" data-title="Sistemas y CAU">
+    <header class="top"><span class="badge">BLOQUE 04</span><span>apoyo, no sustituto</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// sistemas y soporte</div>
+      <h2 class="reveal r1">IA como <span class="hl">apoyo</span>, no como sustituto.</h2>
+      <div class="grid c2 reveal r2" style="margin-top:14px">
+        <div class="card ok">
+          <span class="k">SÍ</span>
+          <ul class="bul" style="margin-top:6px">
+            <li>Interpretar mensajes de error y trazas.</li>
+            <li>Generar documentación a partir de scripts.</li>
+            <li>Borrador de respuesta para tickets repetitivos.</li>
+            <li>Análisis de logs <b>sanitizados</b>.</li>
+            <li>Comparar dos configuraciones y explicar diferencias.</li>
+          </ul>
+        </div>
+        <div class="card warn">
+          <span class="k">NO</span>
+          <ul class="bul warn" style="margin-top:6px">
+            <li>Aplicar configs de red sin validar en lab.</li>
+            <li>Cerrar tickets sin que un humano revise.</li>
+            <li>Pegar logs reales con datos de usuarios.</li>
+            <li>Suplantar el criterio del responsable.</li>
+            <li>Saltarse procedimientos "porque la IA dice X".</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 04 · 8/8</span></footer>
+  </section>
+
+  <!-- 35 CLAUDE PARA OTRAS COSAS (movida una antes) -->
+  <section class="slide" data-title="Para otras cosas">
+    <header class="top"><span class="badge">CIERRE</span><span>no solo código</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// el harness es de código, el modelo es generalista</div>
+      <h2 class="reveal r1">Claude para <span class="hl">otras cosas</span>.</h2>
+      <div class="grid c3 reveal r2" style="margin-top:14px;grid-template-rows:1fr 1fr;gap:12px">
+        <div class="demo"><div class="icon">P</div><h3>Presentaciones</h3><p>Esta misma sesión está hecha con Claude.</p></div>
+        <div class="demo"><div class="icon">D</div><h3>Documentación</h3><p>Manuales, guías, traducciones largas.</p></div>
+        <div class="demo"><div class="icon">📊</div><h3>Análisis de datos</h3><p>CSV, logs, hojas de cálculo.</p></div>
+        <div class="demo"><div class="icon">🖼</div><h3>Imágenes y diagramas</h3><p>Lectura de capturas, generación de Mermaid/SVG.</p></div>
+        <div class="demo"><div class="icon">@</div><h3>Tareas administrativas</h3><p>Circulares, plantillas de correo, actas.</p></div>
+        <div class="demo"><div class="icon">R</div><h3>Investigación</h3><p>Resumir papers, comparar fuentes.</p></div>
+      </div>
+      <p class="reveal r3" style="margin-top:6px;color:#555">El harness es de código. <b>El modelo es generalista. Aprovechadlo.</b></p>
+    </div>
+    <footer class="bot"><span>cierre · 1/3</span></footer>
+  </section>
+
+  <!-- 36 TRES REGLAS (movida una después) -->
+  <section class="slide" data-title="Tres reglas">
+    <header class="top"><span class="badge">CIERRE</span><span>para llevarse a casa</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// resumen ejecutivo</div>
+        <h2 class="reveal r1">Tres reglas, <span class="hl">una hoja</span>.</h2>
+        <ul class="bul ok reveal r2">
+          <li><b>Leed cada diff.</b> Si no entendéis lo que propone, no lo aprobéis. La velocidad es el premio, no la excusa.</li>
+          <li><b>Nada sensible en el prompt.</b> Si no lo mandarías a un proveedor externo por correo, no lo pegues aquí.</li>
+          <li><b>La IA escribe, vosotros firmáis.</b> La responsabilidad técnica no se delega.</li>
+        </ul>
+      </div>
+      <div class="terminal reveal r3">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <div class="com"># tatuádselo en la frente</div>
+        <div>1. <span class="ok">read every diff</span></div>
+        <div>2. <span class="ok">no sensitive data</span></div>
+        <div>3. <span class="ok">you sign the diff</span></div>
+        <div>&nbsp;</div>
+        <div class="dim">— el resto se aprende usándolo.</div>
+        <div>&nbsp;</div>
+        <div><span class="p">$</span> echo "preguntas?"<span class="cursor"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>cierre · 2/3</span></footer>
+  </section>
+
+  <!-- 37 Q&A -->
+  <section class="slide" data-title="Q&amp;A">
+    <header class="top"><span class="badge">CIERRE</span><span>fin de sesión 01</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// turno vuestro</div>
+        <h2 class="reveal r1">Preguntas, dudas,<br/><span class="hl">casos reales</span>.</h2>
+        <p class="reveal r2">Próxima sesión: frameworks de agentes (LangChain / LangGraph) y cuándo NO usar uno.</p>
+        <p class="reveal r3" style="color:#555">Contacto · <b>pablorm@unex.es</b></p>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">claude · q&amp;a</div><div>listening</div></div>
+        <div class="ccbody">
+          <div><span class="dim">$</span> claude --version</div>
+          <div>2.x</div>
+          <div><span class="dim">$</span> echo "preguntas?"</div>
+          <div>preguntas?</div>
+          <div class="dim" style="margin-top:8px">— gracias —</div>
+          <div class="dim">pablorm@unex.es</div>
+        </div>
+        <div class="ccprompt"><span class="ph">vuestro turno</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>cierre · 3/3 · gracias</span></footer>
+  </section>
+
+</main>
+
+<div class="progress" aria-hidden="true"><i id="progressBar"></i></div>
+<div class="slide-counter"><span id="slideNum">01</span> / <span id="slideTotal">39</span></div>
+<div class="nav-hint">← / →  ·  espacio  ·  swipe  ·  rueda  ·  F</div>
+
+<script>
+(function(){
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const bar = document.getElementById('progressBar');
+  const numEl = document.getElementById('slideNum');
+  const totalEl = document.getElementById('slideTotal');
+  let i = 0, busy = false;
+  totalEl.textContent = String(slides.length).padStart(2,'0');
+
+  function show(n){
+    n = Math.max(0, Math.min(slides.length-1, n));
+    if(n===i) return;
+    const old = i;
+    slides[old].classList.remove('active');
+    if(n>old) slides[old].classList.add('prev');
+    setTimeout(()=>slides.forEach(s=>s.classList.remove('prev')), 600);
+    i = n;
+    slides[i].classList.add('active');
+    bar.style.width = ((i+1)/slides.length*100).toFixed(2)+'%';
+    numEl.textContent = String(i+1).padStart(2,'0');
+    history.replaceState(null,'','#'+(i+1));
+  }
+  function next(){ if(busy) return; busy=true; show(i+1); setTimeout(()=>busy=false,400); }
+  function prev(){ if(busy) return; busy=true; show(i-1); setTimeout(()=>busy=false,400); }
+
+  const start = Math.max(0, (parseInt(location.hash.slice(1),10)||1)-1);
+  slides[start].classList.add('active');
+  i = start;
+  bar.style.width = ((i+1)/slides.length*100).toFixed(2)+'%';
+  numEl.textContent = String(i+1).padStart(2,'0');
+
+  window.addEventListener('keydown', e=>{
+    if(['ArrowRight','PageDown',' '].includes(e.key)){ e.preventDefault(); next(); }
+    else if(['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); prev(); }
+    else if(e.key==='Home'){ e.preventDefault(); show(0); }
+    else if(e.key==='End'){ e.preventDefault(); show(slides.length-1); }
+    else if(e.key.toLowerCase()==='f'){
+      if(!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+      else document.exitFullscreen?.();
+    }
+  });
+
+  let wheelLock=0;
+  window.addEventListener('wheel', e=>{
+    const now=Date.now(); if(now-wheelLock<700) return;
+    if(Math.abs(e.deltaY)<25) return;
+    wheelLock=now;
+    if(e.deltaY>0) next(); else prev();
+  }, {passive:true});
+
+  let tx=0,ty=0;
+  window.addEventListener('touchstart', e=>{ tx=e.touches[0].clientX; ty=e.touches[0].clientY; }, {passive:true});
+  window.addEventListener('touchend', e=>{
+    const dx=e.changedTouches[0].clientX-tx;
+    const dy=e.changedTouches[0].clientY-ty;
+    if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)){ dx<0?next():prev(); }
+    else if(Math.abs(dy)>60){ dy<0?next():prev(); }
+  }, {passive:true});
+})();
+</script>
+</body>
+</html>
