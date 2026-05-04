@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "title": "Comprar leche",
+    "priority": 2,
+    "status": "p",
+    "created": "2026-05-01T10:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "title": "Preparar diapositivas",
+    "priority": 1,
+    "status": "p",
+    "created": "2026-05-02T09:30:00.000Z"
+  },
+  {
+    "id": 3,
+    "title": "Pasear al perro",
+    "priority": 3,
+    "status": "d",
+    "created": "2026-04-30T18:00:00.000Z"
+  },
+  {
+    "id": 4,
+    "title": "Responder emails",
+    "priority": 2,
+    "status": "p",
+    "created": "2026-05-03T08:15:00.000Z"
+  }
+]

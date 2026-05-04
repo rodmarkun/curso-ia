@@ -38,9 +38,28 @@
   .slide.active{opacity:1;transform:none;pointer-events:auto}
   .slide.prev{transform:translateY(-18px)}
 
+  .slide-icon{
+    position:absolute;
+    top:clamp(70px,8vw,110px);
+    right:clamp(28px,3vw,48px);
+    width:clamp(234px,27vw,384px);height:auto;
+    opacity:.95;pointer-events:none;z-index:1;
+    filter:drop-shadow(0 6px 22px rgba(0,0,0,.1));
+  }
+  .slide-icon.bottom{top:auto;bottom:clamp(70px,8vw,110px)}
+  .slide-icon.left{right:auto;left:clamp(28px,3vw,48px)}
+  /* Portada: top-right like the others, but tucked above the ccbox so they don't overlap */
+  .slide-icon.portada-icon{
+    top:clamp(58px,6.5vw,82px);
+    right:clamp(28px,3vw,48px);
+    width:clamp(190px,20vw,280px);
+  }
+  .slide.active .slide-icon{animation:rise .8s cubic-bezier(.2,.7,.2,1) both;animation-delay:.3s}
+  @media (max-width:780px){.slide-icon{display:none}}
+
   .top,.bot{
     display:flex;justify-content:space-between;align-items:center;gap:12px;
-    font-family:'JetBrains Mono',monospace;font-size:clamp(11px,.95vw,13px);
+    font-family:'JetBrains Mono',monospace;font-size:clamp(15px,1.25vw,18px);
     color:var(--muted);
   }
   .top{border-bottom:1px solid var(--line);padding-bottom:14px}
@@ -230,6 +249,22 @@
   .reveal{opacity:0;transform:translateY(10px)}
   @keyframes rise{to{opacity:1;transform:none}}
 
+  /* Claude Code mascot — the sparkle that greets you on launch */
+  .mascot{
+    display:inline-block;color:var(--accent);font-weight:700;
+    font-family:'JetBrains Mono',monospace;
+    animation:mascotPulse 2.4s ease-in-out infinite, mascotSpin 8s linear infinite;
+    text-shadow:0 0 12px rgba(212,99,76,.45);
+  }
+  .mascot.lg{font-size:clamp(28px,3vw,42px);line-height:1}
+  @keyframes mascotPulse{
+    0%,100%{opacity:.85;filter:drop-shadow(0 0 0 rgba(212,99,76,0))}
+    50%{opacity:1;filter:drop-shadow(0 0 10px rgba(212,99,76,.55))}
+  }
+  @keyframes mascotSpin{to{transform:rotate(360deg)}}
+  .welcome-line{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .welcome-line .wtext{color:var(--ink);font-weight:600}
+
   /* Harness logo grid */
   .harness-grid{
     display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;
@@ -279,6 +314,7 @@
 
   <!-- 01 PORTADA -->
   <section class="slide" data-title="Portada">
+    <img class="slide-icon portada-icon" src="Claude-Mascot-Pack-SVG/welcome-pixel-banner.svg" alt="">
     <header class="top">
       <span class="badge reveal r1">SESIÓN 01 · LIVE</span>
       <span class="reveal r1">~/campus-virtual&nbsp;|&nbsp;claude --version&nbsp;2.x</span>
@@ -292,11 +328,12 @@
       <div class="ccbox reveal r4">
         <div class="ccbar"><div class="left">claude · sonnet 4.6</div><div>~/campus-virtual</div></div>
         <div class="ccbody">
+          <div class="welcome-line"><span class="mascot lg">✻</span><span class="wtext">Welcome to Claude Code!</span></div>
           <div class="dim">› leyendo CLAUDE.md…</div>
           <div class="dim">› indexando 1.247 archivos PHP…</div>
           <div><span class="ok">✓</span> listo. ¿qué hacemos?</div>
         </div>
-        <div class="ccprompt"><span class="ph">explica el flujo de login de Moodle</span><span class="cur"></span></div>
+        <div class="ccprompt"><span class="ph">explica el curso de IA preparado para la UEx</span><span class="cur"></span></div>
       </div>
     </div>
     <footer class="bot">
@@ -383,6 +420,39 @@
       </div>
     </div>
     <footer class="bot"><span>bloque 01 · 2/10</span></footer>
+  </section>
+
+  <!-- 04b TOKENS Y TOKENIZACIÓN -->
+  <section class="slide" data-title="Tokens y tokenización">
+    <header class="top"><span class="badge">BLOQUE 01</span><span>conceptos · tokens</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// la unidad mínima</div>
+        <h2 class="reveal r1">El modelo no ve <span class="hl">palabras</span>,<br/>ve <span class="hl">tokens</span>.</h2>
+        <p class="reveal r2">Antes de entrar al modelo, tu texto se trocea en <b>tokens</b>: piezas de ~3-4 caracteres en español. El modelo predice tokens, no letras ni palabras enteras.</p>
+        <ul class="bul reveal r3">
+          <li>Una palabra corta suele ser <b>1 token</b>; una larga, <b>2-3</b>.</li>
+          <li>Acentos, emojis y código fuente gastan <b>más</b> tokens.</li>
+          <li>El <b>contexto</b> del modelo se mide en tokens (ej. 200k).</li>
+          <li>Pagas por tokens de <b>entrada</b> y de <b>salida</b>.</li>
+        </ul>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">tokenizer · ejemplo</div><div>~ ≈ tokens</div></div>
+        <div class="ccbody">
+          <div class="dim">texto:</div>
+          <div>"Servicio de Informática de la UEx"</div>
+          <div class="dim" style="margin-top:8px">tokens:</div>
+          <div><span class="ok">[Servicio]</span> <span class="ok">[ de]</span> <span class="ok">[ Inform]</span> <span class="ok">[ática]</span> <span class="ok">[ de]</span> <span class="ok">[ la]</span> <span class="ok">[ U]</span> <span class="ok">[Ex]</span></div>
+          <div class="dim" style="margin-top:8px">→ 8 tokens · 33 caracteres</div>
+          <div style="margin-top:10px" class="dim">contexto típico:</div>
+          <div>Claude Sonnet 4.6 · <span class="a">200k tokens</span> ≈ 150k palabras</div>
+          <div class="dim" style="margin-top:6px">≈ un libro de ~500 páginas en una sola petición</div>
+        </div>
+        <div class="ccprompt"><span class="ph">menos tokens = más rápido y más barato</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 01 · 2b/10</span></footer>
   </section>
 
   <!-- 05 ¿QUÉ ES UN AGENTE? -->
@@ -486,38 +556,6 @@
     <footer class="bot"><span>bloque 01 · 2/8</span></footer>
   </section>
 
-  <!-- 06 PHPSTORM (movida una antes) -->
-  <section class="slide" data-title="PHPStorm">
-    <header class="top"><span class="badge">BLOQUE 01</span><span>phpstorm</span></header>
-    <div class="body stack">
-      <div class="eyebrow reveal r1">// pidido por el Servicio</div>
-      <h2 class="reveal r1">Claude Code en <span class="hl">PHPStorm</span>.</h2>
-      <div class="grid c2 reveal r2" style="margin-top:14px;gap:18px">
-        <div>
-          <ul class="bul">
-            <li><b>Plugin oficial</b> en el marketplace de JetBrains.</li>
-            <li>Se invoca desde la barra lateral o con un atajo.</li>
-            <li>Conoce el <b>fichero abierto</b> y el contexto del proyecto.</li>
-            <li>Diffs propuestos en el panel nativo de PHPStorm — los aceptas como un commit.</li>
-          </ul>
-        </div>
-        <div class="ccbox">
-          <div class="ccbar"><div class="left">PhpStorm · Claude</div><div>login.php</div></div>
-          <div class="ccbody">
-            <div class="tool">⏵ tool: read_file login.php</div>
-            <div class="tool">⏵ tool: search "auth_login_user"</div>
-            <div class="dim">— 3 ocurrencias en /lib/moodlelib.php</div>
-            <div><span class="ok">propongo:</span></div>
-            <div><span class="add">+ Logger::error($e-&gt;getMessage());</span></div>
-            <div class="dim">¿aplicar? [accept · edit · reject]</div>
-          </div>
-          <div class="ccprompt"><span class="ph">añade logging al fallo de login</span><span class="cur"></span></div>
-        </div>
-      </div>
-    </div>
-    <footer class="bot"><span>bloque 01 · 3/8</span></footer>
-  </section>
-
   <!-- 07 MODELOS ANTHROPIC -->
   <section class="slide" data-title="Modelos Anthropic">
     <header class="top"><span class="badge">BLOQUE 01</span><span>modelos</span></header>
@@ -565,6 +603,9 @@
         </div>
       </div>
       <div class="callout reveal r3" style="margin-top:14px">El curso entero asume el segundo modo. <b>La IA escribe, tú firmas.</b></div>
+      <blockquote class="reveal r4" style="margin-top:14px;padding:14px 20px;border-left:3px solid var(--accent);font-family:'Fraunces',serif;font-style:italic;font-size:clamp(20px,1.8vw,26px);line-height:1.4;color:var(--ink)">
+        "Deja que los LLM <em>hagan</em> por ti, no que <em>piensen</em> por ti."
+      </blockquote>
     </div>
     <footer class="bot"><span>bloque 01 · 5/8</span></footer>
   </section>
@@ -683,6 +724,7 @@
 
   <!-- 13 PERMISOS -->
   <section class="slide" data-title="Modelo de permisos">
+    <img class="slide-icon" src="Claude-Mascot-Pack-SVG/secure-access-padlock.svg" alt="">
     <header class="top"><span class="badge">BLOQUE 02</span><span>permisos</span></header>
     <div class="body stack">
       <div class="eyebrow reveal r1">// tres niveles</div>
@@ -708,92 +750,7 @@
     <footer class="bot"><span>bloque 02 · 1/5</span></footer>
   </section>
 
-  <!-- 14 .ENV + QUÉ SALE -->
-  <section class="slide" data-title=".env y qué sale">
-    <header class="top"><span class="badge">BLOQUE 02</span><span>regla .env + data flow</span></header>
-    <div class="body row2">
-      <div class="stack">
-        <div class="eyebrow reveal r1">// arreglemos la trampa anterior</div>
-        <h2 class="reveal r1">Bloqueamos <span class="mono">.env</span> y volvemos a preguntar.</h2>
-        <ul class="bul ok reveal r2">
-          <li>Añadimos <span class="tag">"deny": ["Read(.env)"]</span> en <span class="tag">.claude/settings.json</span>.</li>
-          <li>Repetimos la pregunta — ahora se niega.</li>
-          <li>Las reglas son <b>contrato</b>, no preferencia.</li>
-        </ul>
-        <h3 class="reveal r3" style="margin-top:6px">Qué sale realmente:</h3>
-        <ul class="bul reveal r3">
-          <li>Tus prompts y los diffs propuestos.</li>
-          <li>Fragmentos de ficheros que abre.</li>
-          <li>Stdout de comandos que ejecuta.</li>
-        </ul>
-      </div>
-      <div class="ccbox reveal r4">
-        <div class="ccbar"><div class="left">claude · post-deny</div><div>~/proyecto</div></div>
-        <div class="ccbody">
-          <div class="u">› ¿cuál es la contraseña de la BD?</div>
-          <div class="tool">⏵ tool: read .env</div>
-          <div class="del">✕ permission denied · regla local</div>
-          <div><span class="a">no puedo leer <code style="background:#0a0a0a;color:#fff;padding:2px 6px;border-radius:3px">.env</code>: hay una regla que lo bloquea.</span></div>
-          <div><span class="a">si necesitas configurar credenciales, hazlo tú directamente.</span></div>
-        </div>
-        <div class="ccprompt"><span class="ph">gracias</span><span class="cur"></span></div>
-      </div>
-    </div>
-    <footer class="bot"><span>bloque 02 · 2/5</span></footer>
-  </section>
-
-  <!-- 15 PII / NO METER -->
-  <section class="slide" data-title="Qué NO meter">
-    <header class="top"><span class="badge">BLOQUE 02</span><span>importante</span></header>
-    <div class="body stack">
-      <div class="eyebrow reveal r1">// reglas no escritas</div>
-      <h2 class="reveal r1">Qué <span class="hl">NO</span> debe entrar en un prompt.</h2>
-      <div class="grid c2 reveal r2" style="margin-top:14px">
-        <ul class="bul warn">
-          <li><b>Datos personales</b> de alumnado, PDI, PAS (DNIs, expedientes, notas).</li>
-          <li><b>Configuraciones</b> con credenciales, IPs internas, tokens.</li>
-          <li><b>Tickets</b> con datos identificables.</li>
-        </ul>
-        <ul class="bul warn">
-          <li><b>ENS medio/alto</b> y material clasificado.</li>
-          <li><b>Contratos, licitaciones</b>, documentación legal.</li>
-          <li><b>Backups o dumps</b> de bases de datos de producción.</li>
-        </ul>
-      </div>
-      <div class="callout warn reveal r3" style="margin-top:14px"><b>Regla simple:</b> si no lo mandarías por correo a un proveedor externo, no lo pegues en una IA.</div>
-    </div>
-    <footer class="bot"><span>bloque 02 · 3/5</span></footer>
-  </section>
-
-  <!-- 16 PUBLICA VS CORPORATIVA -->
-  <section class="slide" data-title="Pública vs corporativa">
-    <header class="top"><span class="badge">BLOQUE 02</span><span>la herramienta correcta para cada dato</span></header>
-    <div class="body stack">
-      <div class="eyebrow reveal r1">// shadow AI</div>
-      <h2 class="reveal r1">IA pública vs <span class="hl">corporativa</span>.</h2>
-      <div class="grid c3 reveal r2" style="margin-top:14px">
-        <div class="card warn">
-          <span class="k">pública gratis</span>
-          <h3>ChatGPT free, Gemini free</h3>
-          <p>Sin DPA. Datos pueden usarse. <b>Solo cosas públicas.</b></p>
-        </div>
-        <div class="card">
-          <span class="k">pública de pago</span>
-          <h3>Claude Pro, ChatGPT Plus</h3>
-          <p>Mejor política. Código sin datos sensibles.</p>
-        </div>
-        <div class="card ok">
-          <span class="k">corporativa</span>
-          <h3>Copilot M365, Amazon Bedrock, Claude Enterprise</h3>
-          <p>Dentro del tenant. SSO. Auditoría. Aquí sí entran datos internos.</p>
-        </div>
-      </div>
-      <div class="callout warn reveal r3" style="margin-top:14px"><b>Shadow AI:</b> el riesgo real no es Claude Code mal configurado. Es pegar logs con información sensible en ChatGPT free para "ver qué falla".</div>
-    </div>
-    <footer class="bot"><span>bloque 02 · 4/5</span></footer>
-  </section>
-
-  <!-- 17 CONFIGURACIÓN settings.json -->
+  <!-- CONFIGURACIÓN settings.json -->
   <section class="slide" data-title="Configuración">
     <header class="top"><span class="badge">BLOQUE 02</span><span>aislamiento, env scrub, secretos</span></header>
     <div class="body row2">
@@ -837,8 +794,96 @@
         <div>}<span class="cursor"></span></div>
       </div>
     </div>
-    <footer class="bot"><span>bloque 02 · 5/5</span></footer>
+    <footer class="bot"><span>bloque 02 · antes de .env</span></footer>
   </section>
+
+  <!-- 14 .ENV + QUÉ SALE -->
+  <section class="slide" data-title=".env y qué sale">
+    <header class="top"><span class="badge">BLOQUE 02</span><span>regla .env + data flow</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// arreglemos la trampa anterior</div>
+        <h2 class="reveal r1">Bloqueamos <span class="mono">.env</span> y volvemos a preguntar.</h2>
+        <ul class="bul ok reveal r2">
+          <li>Añadimos <span class="tag">"deny": ["Read(.env)"]</span> en <span class="tag">.claude/settings.json</span>.</li>
+          <li>Repetimos la pregunta — ahora se niega.</li>
+          <li>Las reglas son <b>contrato</b>, no preferencia.</li>
+        </ul>
+        <h3 class="reveal r3" style="margin-top:6px">Qué sale realmente:</h3>
+        <ul class="bul reveal r3">
+          <li>Tus prompts y los diffs propuestos.</li>
+          <li>Fragmentos de ficheros que abre.</li>
+          <li>Stdout de comandos que ejecuta.</li>
+        </ul>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">claude · post-deny</div><div>~/proyecto</div></div>
+        <div class="ccbody">
+          <div class="u">› ¿cuál es la contraseña de la BD?</div>
+          <div class="tool">⏵ tool: read .env</div>
+          <div class="del">✕ permission denied · regla local</div>
+          <div><span class="a">no puedo leer <code style="background:#0a0a0a;color:#fff;padding:2px 6px;border-radius:3px">.env</code>: hay una regla que lo bloquea.</span></div>
+          <div><span class="a">si necesitas configurar credenciales, hazlo tú directamente.</span></div>
+        </div>
+        <div class="ccprompt"><span class="ph">gracias</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 02 · 2/5</span></footer>
+  </section>
+
+  <!-- 15 PII / NO METER -->
+  <section class="slide" data-title="Qué NO meter">
+    <img class="slide-icon" src="Claude-Mascot-Pack-SVG/marking-critical-error.svg" alt="">
+    <header class="top"><span class="badge">BLOQUE 02</span><span>importante</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// reglas no escritas</div>
+      <h2 class="reveal r1">Qué <span class="hl">NO</span> debe entrar en un prompt.</h2>
+      <div class="grid c2 reveal r2" style="margin-top:14px">
+        <ul class="bul warn">
+          <li><b>Datos personales</b> de alumnado, PDI, PAS (DNIs, expedientes, notas).</li>
+          <li><b>Configuraciones</b> con credenciales, IPs internas, tokens.</li>
+          <li><b>Tickets</b> con datos identificables.</li>
+        </ul>
+        <ul class="bul warn">
+          <li><b>ENS medio/alto</b> y material clasificado.</li>
+          <li><b>Contratos, licitaciones</b>, documentación legal.</li>
+          <li><b>Backups o dumps</b> de bases de datos de producción.</li>
+        </ul>
+      </div>
+      <div class="callout warn reveal r3" style="margin-top:14px"><b>Regla simple:</b> si no lo mandarías por correo a un proveedor externo, no lo pegues en una IA.</div>
+    </div>
+    <footer class="bot"><span>bloque 02 · 3/5</span></footer>
+  </section>
+
+  <!-- 16 PUBLICA VS CORPORATIVA -->
+  <section class="slide" data-title="Pública vs corporativa">
+    <img class="slide-icon" src="Claude-Mascot-Pack-SVG/stealth-ninja-security.svg" alt="">
+    <header class="top"><span class="badge">BLOQUE 02</span><span>la herramienta correcta para cada dato</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// shadow AI</div>
+      <h2 class="reveal r1">IA pública vs <span class="hl">corporativa</span>.</h2>
+      <div class="grid c3 reveal r2" style="margin-top:14px">
+        <div class="card warn">
+          <span class="k">pública gratis</span>
+          <h3>ChatGPT free, Gemini free</h3>
+          <p>Sin DPA. Datos pueden usarse. <b>Solo cosas públicas.</b></p>
+        </div>
+        <div class="card">
+          <span class="k">pública de pago</span>
+          <h3>Claude Pro, ChatGPT Plus</h3>
+          <p>Mejor política. Código sin datos sensibles.</p>
+        </div>
+        <div class="card ok">
+          <span class="k">corporativa</span>
+          <h3>Copilot M365, Amazon Bedrock, Claude Enterprise</h3>
+          <p>Dentro del tenant. SSO. Auditoría. Aquí sí entran datos internos.</p>
+        </div>
+      </div>
+      <div class="callout warn reveal r3" style="margin-top:14px"><b>Shadow AI:</b> el riesgo real no es Claude Code mal configurado. Es pegar logs con información sensible en ChatGPT free para "ver qué falla".</div>
+    </div>
+    <footer class="bot"><span>bloque 02 · 4/5</span></footer>
+  </section>
+
 
   <!-- 18 INTRO BLOQUE 3 -->
   <section class="slide" data-title="Intro · Bloque 3">
@@ -921,30 +966,33 @@
     <footer class="bot"><span>bloque 03 · 1/7</span></footer>
   </section>
 
-  <!-- 20 EXPLORAR + /skills -->
-  <section class="slide" data-title="Explorar + /skills">
-    <header class="top"><span class="badge">BLOQUE 03</span><span>explorar con skills</span></header>
+  <!-- 20 CHECKLIST DEL REFACTOR -->
+  <section class="slide" data-title="Checklist del refactor">
+    <header class="top"><span class="badge">BLOQUE 03</span><span>plan de ataque · 4 pasos</span></header>
     <div class="body stack">
-      <div class="eyebrow reveal r1">// /skills al rescate</div>
-      <h2 class="reveal r1">Explorar y <span class="hl">documentar</span></h2>
-      <div class="grid c2 reveal r2" style="margin-top:14px;align-items:start">
-        <div class="card blue">
-          <span class="k">qué le pides</span>
-          <h3>Mapa, entrada, riesgos</h3>
-          <p>"Hazme un mapa en 10 líneas." · "¿Cuál es el punto de entrada?" · "¿Qué partes me preocuparían si fuera nuevo?"</p>
-        </div>
+      <div class="eyebrow reveal r1">// qué le vamos a pedir, por orden</div>
+      <h2 class="reveal r1">Checklist del <span class="hl">refactor</span></h2>
+      <div class="grid c2 reveal r2" style="margin-top:14px;align-items:start;gap:14px">
         <div class="card ok">
-          <span class="k">/skills</span>
-          <h3>repo-describe</h3>
-          <p>Skill que recorre el repo y produce un README inicial + un diagrama Mermaid de arquitectura. <b>Cinco minutos, listo.</b></p>
+          <span class="k">paso 1 · red de seguridad</span>
+          <h3>Antes de tocar nada</h3>
+          <p>Añadir <span class="tag">.gitignore</span>, mover secretos a <span class="tag">.env.example</span> y escribir <b>tests de caracterización</b> de la API antes de cambiar nada.</p>
         </div>
-      </div>
-      <div class="terminal reveal r3" style="margin-top:6px">
-        <div class="com"># skill que se invoca con un comando</div>
-        <div><span class="p">›</span> /skills run repo-describe</div>
-        <div class="dim">› analizando 1.247 ficheros…</div>
-        <div class="ok">✓ README.md generado (84 líneas)</div>
-        <div class="ok">✓ docs/architecture.md con diagrama Mermaid</div>
+        <div class="card blue">
+          <span class="k">paso 2 · backend</span>
+          <h3>Refactor de <span class="tag blue">server.js</span></h3>
+          <p>Extraer <b>routing</b> y <b>persistencia</b> a módulos, sustituir strings mágicos por constantes, añadir <b>validación</b> de input y códigos HTTP correctos.</p>
+        </div>
+        <div class="card">
+          <span class="k">paso 3 · frontend</span>
+          <h3>Partir <span class="tag">public/index.html</span></h3>
+          <p>Separar HTML / CSS / JS, eliminar el <b>XSS por innerHTML</b> y pasar a URLs <b>relativas</b>.</p>
+        </div>
+        <div class="card warn">
+          <span class="k">paso 4 · higiene</span>
+          <h3>README + tooling</h3>
+          <p>Añadir <b>README</b>, configurar <b>ESLint + Prettier</b> y un script <span class="tag">npm test</span>.</p>
+        </div>
       </div>
     </div>
     <footer class="bot"><span>bloque 03 · 2/7</span></footer>
@@ -952,6 +1000,7 @@
 
   <!-- 21 PLAN + REWIND -->
   <section class="slide" data-title="Plan + rewind">
+    <img class="slide-icon" src="Claude-Mascot-Pack-SVG/holding-ancient-scroll.svg" alt="">
     <header class="top"><span class="badge">BLOQUE 03</span><span>refactor seguro</span></header>
     <div class="body stack">
       <div class="eyebrow reveal r1">// pensar antes de tocar</div>
@@ -1009,6 +1058,7 @@
 
   <!-- 23 CUANDO SE ATASCA -->
   <section class="slide" data-title="Cuando se atasca">
+    <img class="slide-icon" src="Claude-Mascot-Pack-SVG/debugging-system-bugs.svg" alt="">
     <header class="top"><span class="badge">BLOQUE 03</span><span>contexto y modelos</span></header>
     <div class="body stack">
       <div class="eyebrow reveal r1">// realidad cotidiana</div>
@@ -1037,6 +1087,7 @@
 
   <!-- 24 CUÁNDO NO USAR -->
   <section class="slide" data-title="Cuándo NO usarlo">
+    <img class="slide-icon" src="Claude-Mascot-Pack-SVG/it-depends-sign.svg" alt="">
     <header class="top"><span class="badge">BLOQUE 03</span><span>contrapeso</span></header>
     <div class="body stack">
       <div class="eyebrow reveal r1">// contrapeso honesto</div>
@@ -1060,6 +1111,7 @@
 
   <!-- 25 CUANDO DESCONFIAR -->
   <section class="slide" data-title="Cuándo desconfiar">
+    <img class="slide-icon" src="Claude-Mascot-Pack-SVG/system-error-alert.svg" alt="">
     <header class="top"><span class="badge">BLOQUE 03</span><span>verificar &gt; escribir</span></header>
     <div class="body stack">
       <div class="eyebrow reveal r1">// la parte que nadie enseña</div>
@@ -1187,6 +1239,7 @@
 
   <!-- 29 SKILLS HOOKS COMANDOS -->
   <section class="slide" data-title="Skills, hooks, comandos">
+    <img class="slide-icon" src="Claude-Mascot-Pack-SVG/building-colorful-blocks.svg" alt="">
     <header class="top"><span class="badge">BLOQUE 04</span><span>plataforma a medida</span></header>
     <div class="body stack">
       <div class="eyebrow reveal r1">// extender claude code</div>
@@ -1317,6 +1370,7 @@
 
   <!-- 34 SYSADMIN / CAU -->
   <section class="slide" data-title="Sistemas y CAU">
+    <img class="slide-icon" src="Claude-Mascot-Pack-SVG/managing-server-rack.svg" alt="">
     <header class="top"><span class="badge">BLOQUE 04</span><span>apoyo, no sustituto</span></header>
     <div class="body stack">
       <div class="eyebrow reveal r1">// sistemas y soporte</div>
