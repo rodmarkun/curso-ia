@@ -342,6 +342,31 @@
     </footer>
   </section>
 
+  <!-- 01b REPO DEL CURSO -->
+  <section class="slide" data-title="Repo del curso">
+    <header class="top"><span class="badge">RECURSOS</span><span>todo el material, en un sitio</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// git clone</div>
+        <h2 class="reveal r1">Repo del <span class="hl">curso</span>.</h2>
+        <p class="reveal r2">Slides, ejemplos, configuraciones, skills y enlaces. Todo en abierto.</p>
+        <div class="reveal r3" style="margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:clamp(18px,1.6vw,24px);padding:12px 16px;background:#0a0a0a;color:#fff;border-radius:6px;display:inline-block;word-break:break-all">
+          <span style="color:#888">$ </span>git clone <span style="color:var(--accent)">https://github.com/rodmarkun/curso-ia</span>
+        </div>
+      </div>
+      <div class="reveal r4" style="display:flex;align-items:center;justify-content:center;height:100%;padding:14px">
+        <a href="https://github.com/rodmarkun/curso-ia" style="display:block;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.12);max-width:100%;background:#fff">
+          <img src="https://opengraph.githubassets.com/1/rodmarkun/curso-ia" alt="github.com/rodmarkun/curso-ia" style="display:block;width:100%;height:auto;max-height:62vh;object-fit:cover">
+        </a>
+      </div>
+    </div>
+    <footer class="bot" style="justify-content:center">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:clamp(22px,2.6vw,40px);font-weight:600;color:var(--ink);white-space:nowrap;letter-spacing:.01em">
+        → github.com/rodmarkun/curso-ia
+      </span>
+    </footer>
+  </section>
+
   <!-- 02 AGENDA -->
   <section class="slide" data-title="Agenda">
     <header class="top"><span class="badge">AGENDA</span><span>4 bloques + cierre</span></header>
@@ -1205,6 +1230,35 @@
     <footer class="bot"><span>bloque 04 · 1/8</span></footer>
   </section>
 
+  <!-- IDIOMA: ENGLISH > SPANISH -->
+  <section class="slide" data-title="¿En qué idioma le hablas?">
+    <img class="slide-icon" src="Claude-Mascot-Pack-SVG/holding-green-leaf.svg" alt="">
+    <header class="top"><span class="badge">BLOQUE 04</span><span>idioma del prompt</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// detalle que casi nadie cuenta</div>
+      <h2 class="reveal r1">Habla con el LLM en <span class="hl">inglés</span>.</h2>
+      <p class="reveal r2">Los modelos están entrenados con muchísimo más texto en inglés que en español. <b>El inglés es el idioma nativo del modelo</b> — el español es una traducción aprendida.</p>
+      <div class="grid c3 reveal r3" style="margin-top:14px">
+        <div class="card ok">
+          <span class="k">razonamiento</span>
+          <h3>Mejor en inglés</h3>
+          <p>Más datos de entrenamiento → instrucciones más claras, menos ambigüedad y menos alucinaciones en tareas complejas.</p>
+        </div>
+        <div class="card blue">
+          <span class="k">tokens</span>
+          <h3>Más barato y rápido</h3>
+          <p>El mismo texto en español usa <b>~25-40% más tokens</b> (acentos, palabras largas). En inglés pagas y esperas menos.</p>
+        </div>
+        <div class="card">
+          <span class="k">técnico</span>
+          <h3>El código ya es inglés</h3>
+          <p>APIs, librerías, errores, documentación, Stack Overflow… todo está en inglés. Hablar inglés con el modelo evita una traducción mental innecesaria.</p>
+        </div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 04 · 1b/8</span></footer>
+  </section>
+
   <!-- 28 SUBAGENTES -->
   <section class="slide" data-title="Subagentes">
     <header class="top"><span class="badge">BLOQUE 04</span><span>claude llamando a claude</span></header>
@@ -1237,6 +1291,42 @@
     <footer class="bot"><span>bloque 04 · 2/8</span></footer>
   </section>
 
+  <!-- GESTIÓN DE JOBS / BACKGROUND -->
+  <section class="slide" data-title="Jobs en background">
+    <header class="top"><span class="badge">BLOQUE 04</span><span>procesos largos sin bloquear la sesión</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// run_in_background</div>
+        <h2 class="reveal r1">Gestionar <span class="hl">jobs</span> en Claude Code.</h2>
+        <p class="reveal r2">Para servidores de desarrollo, builds largos, watchers o tests que tardan: <b>Claude lanza el comando en background</b> y sigue trabajando en lugar de quedarse bloqueado esperando.</p>
+        <ul class="bul reveal r3">
+          <li><b>Lanzar</b> · Bash con <span class="tag">run_in_background: true</span> (también <span class="tag">Ctrl+B</span> sobre un comando ya en marcha).</li>
+          <li><b>Listar</b> · slash command <span class="tag">/bashes</span> muestra los procesos vivos.</li>
+          <li><b>Ver salida</b> · <span class="tag">BashOutput</span> recupera stdout/stderr cuando lo necesites.</li>
+          <li><b>Matar</b> · <span class="tag">KillShell</span> o desde <span class="tag">/bashes</span>.</li>
+        </ul>
+        <div class="callout reveal r4" style="margin-top:8px"><b>Cuándo sí:</b> dev server, watcher de tests, build largo. <b>Cuándo no:</b> comandos cortos, donde solo añade ruido.</div>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">claude · /bashes</div><div>2 jobs activos</div></div>
+        <div class="ccbody">
+          <div class="u">› arranca el dev server y sigue con los tests</div>
+          <div class="tool">⏵ Bash(npm run dev) <span class="dim">· run_in_background: true</span></div>
+          <div><span class="ok">✓</span> shell <span class="a">#a3f</span> · listening :3000</div>
+          <div class="tool">⏵ Bash(npm test --watch) <span class="dim">· run_in_background: true</span></div>
+          <div><span class="ok">✓</span> shell <span class="a">#b71</span> · 24 tests pasando</div>
+          <div class="dim" style="margin-top:8px">› /bashes</div>
+          <div>#a3f · npm run dev      <span class="ok">running</span></div>
+          <div>#b71 · npm test --watch <span class="ok">running</span></div>
+          <div class="dim" style="margin-top:8px">› BashOutput(#b71)</div>
+          <div><span class="ok">PASS</span> auth.test.js</div>
+        </div>
+        <div class="ccprompt"><span class="ph">no bloquees la sesión por un proceso largo</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 04 · 2b/8</span></footer>
+  </section>
+
   <!-- 29 SKILLS HOOKS COMANDOS -->
   <section class="slide" data-title="Skills, hooks, comandos">
     <img class="slide-icon" src="Claude-Mascot-Pack-SVG/building-colorful-blocks.svg" alt="">
@@ -1264,6 +1354,41 @@
       <p class="reveal r3" style="margin-top:8px;color:#555">No hace falta usar nada de esto al principio. Aparecen solos cuando notáis que repetís el mismo prompt.</p>
     </div>
     <footer class="bot"><span>bloque 04 · 3/8</span></footer>
+  </section>
+
+  <!-- PLUGINS -->
+  <section class="slide" data-title="Plugins">
+    <header class="top"><span class="badge">BLOQUE 04</span><span>distribuir tu setup</span></header>
+    <div class="body row2">
+      <div class="stack">
+        <div class="eyebrow reveal r1">// /plugin</div>
+        <h2 class="reveal r1"><span class="hl">Plugins</span>: empaqueta y comparte.</h2>
+        <p class="reveal r2">Un <b>plugin</b> de Claude Code es un paquete que agrupa <b>skills, comandos, subagentes, hooks y servidores MCP</b> listos para instalar. La forma natural de compartir un setup completo entre equipos.</p>
+        <ul class="bul reveal r3">
+          <li><b>Instalar</b> · <span class="tag">/plugin install &lt;nombre&gt;</span> desde un marketplace.</li>
+          <li><b>Marketplaces</b> · oficial de Anthropic + repos de la comunidad (GitHub).</li>
+          <li><b>Activar/desactivar</b> · por proyecto desde <span class="tag">.claude/settings.json</span>.</li>
+          <li><b>Crear el tuyo</b> · una carpeta con <span class="tag">plugin.json</span> y los recursos.</li>
+        </ul>
+        <div class="callout reveal r4" style="margin-top:8px"><b>Para el Servicio:</b> un plugin interno con CLAUDE.md base, hooks de auditoría y skills propios — un comando para instalarlo todo.</div>
+      </div>
+      <div class="ccbox reveal r4">
+        <div class="ccbar"><div class="left">claude · /plugin</div><div>marketplace</div></div>
+        <div class="ccbody">
+          <div class="u">› /plugin marketplace add anthropics/claude-code</div>
+          <div><span class="ok">✓</span> marketplace añadido</div>
+          <div class="dim" style="margin-top:6px">› /plugin install code-reviewer</div>
+          <div class="tool">⏵ resolviendo dependencias…</div>
+          <div><span class="ok">✓</span> 4 skills · 2 comandos · 1 hook</div>
+          <div class="dim" style="margin-top:6px">› /plugin list</div>
+          <div>code-reviewer       <span class="ok">activo</span></div>
+          <div>uex-servicio-base   <span class="ok">activo</span></div>
+          <div>frontend-slides     <span class="dim">desactivado</span></div>
+        </div>
+        <div class="ccprompt"><span class="ph">un plugin = todo tu setup en un comando</span><span class="cur"></span></div>
+      </div>
+    </div>
+    <footer class="bot"><span>bloque 04 · 3b/8</span></footer>
   </section>
 
   <!-- 30 SKILLHUB / COMUNIDAD -->
