@@ -1,0 +1,15 @@
+{
+  "title": "Tarefas",
+  "heading": "Minhas Tarefas",
+  "placeholder": "Nova tarefa...",
+  "add": "Adicionar",
+  "prio.high": "Alta",
+  "prio.medium": "Média",
+  "prio.low": "Baixa",
+  "filter.label": "Filtro:",
+  "filter.all": "Todas",
+  "filter.pending": "Pendentes",
+  "filter.done": "Concluídas",
+  "del": "x",
+  "stats": "{pending} pendentes, {done} concluídas ({total} total)"
+}

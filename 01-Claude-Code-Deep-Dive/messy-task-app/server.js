@@ -47,9 +47,25 @@ function readBody(req, cb){
   })
 }
 
+var CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type"
+}
+
+var STATIC_TYPES = { ".html":"text/html", ".json":"application/json", ".js":"text/javascript", ".css":"text/css" }
+
 var server = http.createServer(function(req, res){
   var u = url.parse(req.url, true)
   var p = u.pathname
+
+  Object.keys(CORS_HEADERS).forEach(function(h){ res.setHeader(h, CORS_HEADERS[h]) })
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204)
+    res.end()
+    return
+  }
 
   if (p === "/" || p === "/index.html") {
       try {
@@ -57,6 +73,16 @@ var server = http.createServer(function(req, res){
         res.writeHead(200, {"Content-Type":"text/html"})
         res.end(html)
       } catch(e){ res.writeHead(500); res.end("err") }
+      return
+  }
+
+  if (p.startsWith("/locales/")) {
+      try {
+        var file = fs.readFileSync(path.join(__dirname,"public",p))
+        var ext = path.extname(p)
+        res.writeHead(200, {"Content-Type": STATIC_TYPES[ext] || "text/plain"})
+        res.end(file)
+      } catch(e){ res.writeHead(404); res.end("404") }
       return
   }
 
@@ -145,7 +171,7 @@ var server = http.createServer(function(req, res){
   res.writeHead(404); res.end("404")
 })
 
-var PORT = 5000
+var PORT = process.env.PORT || 5000
 server.listen(PORT, function(){
   console.log("listening on http://localhost:" + PORT)
 })
