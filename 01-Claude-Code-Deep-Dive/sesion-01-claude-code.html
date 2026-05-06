@@ -49,6 +49,11 @@
   .slide-icon.bottom{top:auto;bottom:clamp(70px,8vw,110px)}
   .slide-icon.left{right:auto;left:clamp(28px,3vw,48px)}
   /* Portada: top-right like the others, but tucked above the ccbox so they don't overlap */
+  .slide-icon.tight{
+    top:clamp(46px,4.5vw,64px);
+    right:clamp(14px,1.5vw,22px);
+    width:clamp(120px,13vw,180px);
+  }
   .slide-icon.portada-icon{
     top:clamp(58px,6.5vw,82px);
     right:clamp(28px,3vw,48px);
@@ -442,6 +447,7 @@
 
   <!-- 04b TOKENS Y TOKENIZACIÓN -->
   <section class="slide" data-title="Tokens y tokenización">
+    <img class="slide-icon tight" src="Claude-Mascot-Pack-SVG/data-blocks-pixel.svg" alt="">
     <header class="top"><span class="badge">BLOQUE 01</span><span>conceptos · tokens</span></header>
     <div class="body row2">
       <div class="stack">
@@ -628,6 +634,7 @@
 
   <!-- 09 LOOP FUNDAMENTAL -->
   <section class="slide" data-title="Loop fundamental">
+    <img class="slide-icon tight" src="Claude-Mascot-Pack-SVG/in-constant-loop.svg" alt="">
     <header class="top"><span class="badge">BLOQUE 01</span><span>el loop</span></header>
     <div class="body row2">
       <div class="stack">
@@ -947,71 +954,24 @@
     <footer class="bot"><span>bloque 03 · intro</span><span>~40 min</span></footer>
   </section>
 
-  <!-- 19 EL REPO DESORDENADO -->
-  <section class="slide" data-title="Repo desordenado">
-    <header class="top"><span class="badge">BLOQUE 03</span><span>el proyecto</span></header>
-    <div class="body row2">
-      <div class="stack">
-        <div class="eyebrow reveal r1">// con qué vamos a trabajar</div>
-        <h2 class="reveal r1">Un repo <span class="hl">realista</span>: feo y sin tests.</h2>
-        <ul class="bul warn reveal r2">
-          <li>Sin tests, sin estructura, sin README.</li>
-          <li>Una función gigante de 300 líneas.</li>
-          <li>Una dependencia rota que nadie ha tocado.</li>
-          <li>Logs con datos sensibles a stdout.</li>
-        </ul>
-        <p class="reveal r3" style="margin-top:8px">El típico que os llega cuando cambia el responsable.</p>
-      </div>
-      <div class="ccbox reveal r4">
-        <div class="ccbar"><div class="left">claude · explorando</div><div>~/legacy-app</div></div>
-        <div class="ccbody">
-          <div class="u">› dame un mapa de este proyecto</div>
-          <div class="tool">⏵ tool: glob "**/*.php"</div>
-          <div class="tool">⏵ tool: read package.json</div>
-          <div class="tool">⏵ tool: read src/index.php</div>
-          <div><span class="a">resumen:</span></div>
-          <div>1. backend Node + Express</div>
-          <div>2. auth con sesiones (no JWT)</div>
-          <div>3. mysql vía mysql2, sin ORM</div>
-          <div><span class="del">4. ningún test</span></div>
-          <div><span class="del">5. logs a stdout, sin formato</span></div>
-        </div>
-        <div class="ccprompt"><span class="ph">…</span><span class="cur"></span></div>
-      </div>
-    </div>
-    <footer class="bot"><span>bloque 03 · 1/7</span></footer>
-  </section>
-
-  <!-- 20 CHECKLIST DEL REFACTOR -->
-  <section class="slide" data-title="Checklist del refactor">
-    <header class="top"><span class="badge">BLOQUE 03</span><span>plan de ataque · 4 pasos</span></header>
+  <!-- 22 PROMPT: PIDE UN PLAN -->
+  <section class="slide" data-title="Pide un plan">
+    <header class="top"><span class="badge">BLOQUE 03</span><span>un solo prompt · plan completo</span></header>
     <div class="body stack">
-      <div class="eyebrow reveal r1">// qué le vamos a pedir, por orden</div>
-      <h2 class="reveal r1">Checklist del <span class="hl">refactor</span></h2>
-      <div class="grid c2 reveal r2" style="margin-top:14px;align-items:start;gap:14px">
-        <div class="card ok">
-          <span class="k">paso 1 · red de seguridad</span>
-          <h3>Antes de tocar nada</h3>
-          <p>Añadir <span class="tag">.gitignore</span>, mover secretos a <span class="tag">.env.example</span> y escribir <b>tests de caracterización</b> de la API antes de cambiar nada.</p>
+      <div class="eyebrow reveal r1">// no le des órdenes sueltas: dale objetivos y deja que él plantee el plan</div>
+      <h2 class="reveal r1">Un <span class="hl">prompt</span>, un plan.</h2>
+      <div class="ccbox reveal r2" style="margin-top:8px">
+        <div class="ccbar"><div class="left">claude · plan mode</div><div>~/legacy-app</div></div>
+        <div class="ccbody" style="font-size:clamp(18px,1.55vw,24px);line-height:1.6">
+          <div class="u">› Quiero modernizar este repo: añadir tests, separar responsabilidades y eliminar los problemas de seguridad obvios.</div>
+          <div>&nbsp;</div>
+          <div class="u">&nbsp;&nbsp;&nbsp;Analiza el código y propón un plan por fases, ordenado por riesgo y dependencia.</div>
+          <div class="u">&nbsp;&nbsp;&nbsp;<s>No edites nada hasta que lo aprobemos.</s></div>
         </div>
-        <div class="card blue">
-          <span class="k">paso 2 · backend</span>
-          <h3>Refactor de <span class="tag blue">server.js</span></h3>
-          <p>Extraer <b>routing</b> y <b>persistencia</b> a módulos, sustituir strings mágicos por constantes, añadir <b>validación</b> de input y códigos HTTP correctos.</p>
-        </div>
-        <div class="card">
-          <span class="k">paso 3 · frontend</span>
-          <h3>Partir <span class="tag">public/index.html</span></h3>
-          <p>Separar HTML / CSS / JS, eliminar el <b>XSS por innerHTML</b> y pasar a URLs <b>relativas</b>.</p>
-        </div>
-        <div class="card warn">
-          <span class="k">paso 4 · higiene</span>
-          <h3>README + tooling</h3>
-          <p>Añadir <b>README</b>, configurar <b>ESLint + Prettier</b> y un script <span class="tag">npm test</span>.</p>
-        </div>
+        <div class="ccprompt"><span class="ph">objetivo arriba · plan abajo · revisas y apruebas</span><span class="cur"></span></div>
       </div>
     </div>
-    <footer class="bot"><span>bloque 03 · 2/7</span></footer>
+    <footer class="bot"><span>bloque 03 · 1/6</span></footer>
   </section>
 
   <!-- 21 PLAN + REWIND -->
@@ -1125,35 +1085,6 @@
     <footer class="bot"><span>bloque 03 · 6/7</span></footer>
   </section>
 
-  <!-- 25 CUANDO DESCONFIAR -->
-  <section class="slide" data-title="Cuándo desconfiar">
-    <img class="slide-icon" src="Claude-Mascot-Pack-SVG/system-error-alert.svg" alt="">
-    <header class="top"><span class="badge">BLOQUE 03</span><span>verificar &gt; escribir</span></header>
-    <div class="body stack">
-      <div class="eyebrow reveal r1">// la parte que nadie enseña</div>
-      <h2 class="reveal r1">Cuándo <span class="hl">desconfiar</span>.</h2>
-      <div class="grid c3 reveal r2" style="margin-top:14px">
-        <div class="card warn">
-          <span class="k">señal 01</span>
-          <h3>Inventa funciones</h3>
-          <p>Llama a métodos que no existen en la librería. Lo dice con total seguridad. <b>Verifica siempre.</b></p>
-        </div>
-        <div class="card warn">
-          <span class="k">señal 02</span>
-          <h3>Borra lo que no entiende</h3>
-          <p>Si no ve para qué sirve un fichero, propone eliminarlo. Léete cada borrado.</p>
-        </div>
-        <div class="card warn">
-          <span class="k">señal 03</span>
-          <h3>"Ya está, funciona"</h3>
-          <p>Sin haber ejecutado los tests. Frase de moda en errores graves.</p>
-        </div>
-      </div>
-      <div class="callout warn reveal r3" style="margin-top:14px">Tu trabajo cambia de <b>escribir</b> a <b>verificar</b>. Más rápido, igual de exigente.</div>
-    </div>
-    <footer class="bot"><span>bloque 03 · 7/7</span></footer>
-  </section>
-
   <!-- 26 INTRO BLOQUE 4 -->
   <section class="slide" data-title="Intro · Bloque 4">
     <header class="top"><span class="badge">BLOQUE 04</span><span>avanzado</span></header>
@@ -1252,6 +1183,7 @@
 
   <!-- 28 SUBAGENTES -->
   <section class="slide" data-title="Subagentes">
+    <img class="slide-icon tight" src="Claude-Mascot-Pack-SVG/developer-pair-programming-scene.svg" alt="">
     <header class="top"><span class="badge">BLOQUE 04</span><span>claude llamando a claude</span></header>
     <div class="body row2">
       <div class="stack">
@@ -1280,42 +1212,6 @@
       </div>
     </div>
     <footer class="bot"><span>bloque 04 · 2/8</span></footer>
-  </section>
-
-  <!-- GESTIÓN DE JOBS / BACKGROUND -->
-  <section class="slide" data-title="Jobs en background">
-    <header class="top"><span class="badge">BLOQUE 04</span><span>procesos largos sin bloquear la sesión</span></header>
-    <div class="body row2">
-      <div class="stack">
-        <div class="eyebrow reveal r1">// run_in_background</div>
-        <h2 class="reveal r1">Gestionar <span class="hl">jobs</span> en Claude Code.</h2>
-        <p class="reveal r2">Para servidores de desarrollo, builds largos, watchers o tests que tardan: <b>Claude lanza el comando en background</b> y sigue trabajando en lugar de quedarse bloqueado esperando.</p>
-        <ul class="bul reveal r3">
-          <li><b>Lanzar</b> · Bash con <span class="tag">run_in_background: true</span> (también <span class="tag">Ctrl+B</span> sobre un comando ya en marcha).</li>
-          <li><b>Listar</b> · slash command <span class="tag">/bashes</span> muestra los procesos vivos.</li>
-          <li><b>Ver salida</b> · <span class="tag">BashOutput</span> recupera stdout/stderr cuando lo necesites.</li>
-          <li><b>Matar</b> · <span class="tag">KillShell</span> o desde <span class="tag">/bashes</span>.</li>
-        </ul>
-        <div class="callout reveal r4" style="margin-top:8px"><b>Cuándo sí:</b> dev server, watcher de tests, build largo. <b>Cuándo no:</b> comandos cortos, donde solo añade ruido.</div>
-      </div>
-      <div class="ccbox reveal r4">
-        <div class="ccbar"><div class="left">claude · /bashes</div><div>2 jobs activos</div></div>
-        <div class="ccbody">
-          <div class="u">› arranca el dev server y sigue con los tests</div>
-          <div class="tool">⏵ Bash(npm run dev) <span class="dim">· run_in_background: true</span></div>
-          <div><span class="ok">✓</span> shell <span class="a">#a3f</span> · listening :3000</div>
-          <div class="tool">⏵ Bash(npm test --watch) <span class="dim">· run_in_background: true</span></div>
-          <div><span class="ok">✓</span> shell <span class="a">#b71</span> · 24 tests pasando</div>
-          <div class="dim" style="margin-top:8px">› /bashes</div>
-          <div>#a3f · npm run dev      <span class="ok">running</span></div>
-          <div>#b71 · npm test --watch <span class="ok">running</span></div>
-          <div class="dim" style="margin-top:8px">› BashOutput(#b71)</div>
-          <div><span class="ok">PASS</span> auth.test.js</div>
-        </div>
-        <div class="ccprompt"><span class="ph">no bloquees la sesión por un proceso largo</span><span class="cur"></span></div>
-      </div>
-    </div>
-    <footer class="bot"><span>bloque 04 · 2b/8</span></footer>
   </section>
 
   <!-- 29 SKILLS HOOKS COMANDOS -->
@@ -1463,6 +1359,7 @@
 
   <!-- 33 REVISIÓN DE PRs -->
   <section class="slide" data-title="Revisión de PRs">
+    <img class="slide-icon" src="Claude-Mascot-Pack-SVG/professional-documentation-audit.svg" alt="">
     <header class="top"><span class="badge">BLOQUE 04</span><span>code review</span></header>
     <div class="body stack">
       <div class="eyebrow reveal r1">// primer pase automático</div>
@@ -1534,6 +1431,24 @@
       <p class="reveal r3" style="margin-top:6px;color:#555">El harness es de código. <b>El modelo es generalista. Aprovechadlo.</b></p>
     </div>
     <footer class="bot"><span>cierre · 1/3</span></footer>
+  </section>
+
+  <!-- PRÁCTICA -->
+  <section class="slide" data-title="Práctica">
+    <img class="slide-icon" src="Claude-Mascot-Pack-SVG/rocket-launch-success.svg" alt="">
+    <header class="top"><span class="badge">CIERRE</span><span>vuestro turno</span></header>
+    <div class="body stack">
+      <div class="eyebrow reveal r1">// hands-on</div>
+      <h2 class="reveal r1"><span class="hl">Práctica</span>: pídele features y abre una PR.</h2>
+      <ul class="bul reveal r2" style="margin-top:10px">
+        <li>Pídele a Claude varias <b>features</b>. Experimenta por tu cuenta.</li>
+        <li>Usa <span class="tag">/plan</span>, <span class="tag">/rewind</span> y <span class="tag">/compact</span>.</li>
+        <li>Revisa lo que escribe y <b>pruébalo</b>.</li>
+        <li>Cuando estés contento, pídele que <b>abra una PR</b> al repo del curso con las features.</li>
+      </ul>
+      <div class="callout reveal r3" style="margin-top:14px;font-family:'JetBrains Mono',monospace">→ github.com/rodmarkun/curso-ia</div>
+    </div>
+    <footer class="bot"><span>cierre · práctica</span></footer>
   </section>
 
   <!-- 37 Q&A -->
