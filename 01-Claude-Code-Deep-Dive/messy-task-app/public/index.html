@@ -2,44 +2,41 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Tareas</title>
+<title data-i18n="title"></title>
 <style>
 body { font-family: Arial; max-width: 600px; margin: 30px auto; padding: 0 15px; background:#f4f4f4; }
 h1 { color:#333; }
-  .row { display:flex; gap:6px; margin-bottom:10px; }
-.row input, .row select, .row button {
-    padding: 6px;
-    font-size:14px;
-}
+.row { display:flex; gap:6px; margin-bottom:10px; }
+.row input, .row select, .row button { padding: 6px; font-size:14px; }
 ul { list-style:none; padding:0; }
 li { background:white; padding:8px; margin-bottom:4px; display:flex; align-items:center; gap:8px; border:1px solid #ccc; }
-  li.done span.t { text-decoration: line-through; color:#888; }
+li.done span.t { text-decoration: line-through; color:#888; }
 .prio1 { border-left:4px solid red; }
-  .prio2 { border-left: 4px solid orange; }
+.prio2 { border-left:4px solid orange; }
 .prio3 { border-left:4px solid green; }
 button.del { margin-left:auto; background:#c33; color:white; border:0; padding:4px 8px; cursor:pointer; }
-.stats { color:#555; font-size: 13px; margin-top:10px; }
+.stats { color:#555; font-size:13px; margin-top:10px; }
 </style>
 </head>
 <body>
-<h1>Mis Tareas</h1>
+<h1 data-i18n="heading"></h1>
 
 <div class="row">
-  <input id="t" placeholder="Nueva tarea..." style="flex:1">
+  <input id="t" data-i18n-placeholder="placeholder" style="flex:1">
   <select id="pr">
-    <option value="1">Alta</option>
-    <option value="2" selected>Media</option>
-    <option value="3">Baja</option>
+    <option value="1" data-i18n="prio.high"></option>
+    <option value="2" selected data-i18n="prio.medium"></option>
+    <option value="3" data-i18n="prio.low"></option>
   </select>
-  <button onclick="add()">Añadir</button>
+  <button onclick="add()" data-i18n="add"></button>
 </div>
 
 <div class="row">
-  <label>Filtro:</label>
+  <label data-i18n="filter.label"></label>
   <select id="f" onchange="load()">
-    <option value="all">Todas</option>
-    <option value="pending">Pendientes</option>
-    <option value="done">Hechas</option>
+    <option value="all" data-i18n="filter.all"></option>
+    <option value="pending" data-i18n="filter.pending"></option>
+    <option value="done" data-i18n="filter.done"></option>
   </select>
 </div>
 
@@ -47,57 +44,103 @@ button.del { margin-left:auto; background:#c33; color:white; border:0; padding:4
 <div class="stats" id="stats"></div>
 
 <script>
-var API = "http://localhost:5000"
+var API = ""
+
+var SUPPORTED = ["es", "en", "pt"]
+var lang = (navigator.language || "en").slice(0, 2)
+if (!SUPPORTED.includes(lang)) lang = "en"
+
+var t = {}
+
+function interpolate(template, vars) {
+  return template.replace(/\{(\w+)\}/g, function(_, key) { return vars[key] !== undefined ? vars[key] : "" })
+}
+
+function applyTranslations() {
+  document.querySelectorAll("[data-i18n]").forEach(function(el) {
+    var key = el.getAttribute("data-i18n")
+    if (t[key] !== undefined) el.textContent = t[key]
+  })
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(function(el) {
+    var key = el.getAttribute("data-i18n-placeholder")
+    if (t[key] !== undefined) el.placeholder = t[key]
+  })
+}
 
 function load(){
-    var f = document.getElementById("f").value
-    var url = API + "/api/tasks"
-    if (f !== "all") url += "?filter=" + f
-    fetch(url).then(function(r){ return r.json() }).then(function(arr){
-        var ul = document.getElementById("list")
-        ul.innerHTML = ""
-        for (var i=0;i<arr.length;i++){
-            var t = arr[i]
-            var done = t.status === "d"
-            var html = '<li class="prio'+t.priority+(done?' done':'')+'">'
-            html += '<input type="checkbox" '+(done?'checked':'')+' onclick="toggle('+t.id+','+(!done)+')">'
-            html += '<span class="t">'+t.title+'</span>'
-            html += '<button class="del" onclick="del('+t.id+')">x</button>'
-            html += '</li>'
-            ul.innerHTML += html
-        }
-    })
-    fetch(API + "/api/stats").then(function(r){ return r.json() }).then(function(s){
-        document.getElementById("stats").innerText = s.pending + " pendientes, " + s.done + " hechas (" + s.total + " total)"
-    })
+  var f = document.getElementById("f").value
+  var url = API + "/api/tasks"
+  if (f !== "all") url += "?filter=" + f
+  fetch(url).then(function(r){ return r.json() }).then(function(arr){
+    var ul = document.getElementById("list")
+    ul.innerHTML = ""
+    for (var i = 0; i < arr.length; i++){
+      var task = arr[i]
+      var done = task.status === "d"
+      var li = document.createElement("li")
+      li.className = "prio" + task.priority + (done ? " done" : "")
+
+      var cb = document.createElement("input")
+      cb.type = "checkbox"
+      cb.checked = done
+      cb.onclick = (function(id, wasDone) {
+        return function() { toggle(id, !wasDone) }
+      })(task.id, done)
+
+      var span = document.createElement("span")
+      span.className = "t"
+      span.textContent = task.title
+
+      var btn = document.createElement("button")
+      btn.className = "del"
+      btn.textContent = t["del"] || "x"
+      btn.onclick = (function(id) {
+        return function() { del(id) }
+      })(task.id)
+
+      li.appendChild(cb)
+      li.appendChild(span)
+      li.appendChild(btn)
+      ul.appendChild(li)
+    }
+  })
+  fetch(API + "/api/stats").then(function(r){ return r.json() }).then(function(s){
+    document.getElementById("stats").textContent = interpolate(t.stats || "", { pending: s.pending, done: s.done, total: s.total })
+  })
 }
 
 function add(){
-    var t = document.getElementById("t").value
-    var pr = parseInt(document.getElementById("pr").value)
-    fetch(API + "/api/tasks", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({title: t, priority: pr})
-    }).then(function(){
-        document.getElementById("t").value = ""
-        load()
-    })
+  var title = document.getElementById("t").value
+  var pr = parseInt(document.getElementById("pr").value)
+  fetch(API + "/api/tasks", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({title: title, priority: pr})
+  }).then(function(){
+    document.getElementById("t").value = ""
+    load()
+  })
 }
 
 function toggle(id, makeDone){
-    fetch(API + "/api/tasks/" + id, {
-        method:"PATCH",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({status: makeDone ? "d" : "p"})
-    }).then(function(){ load() })
+  fetch(API + "/api/tasks/" + id, {
+    method: "PATCH",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({status: makeDone ? "d" : "p"})
+  }).then(function(){ load() })
 }
 
 function del(id){
-    fetch(API + "/api/tasks/" + id, {method:"DELETE"}).then(function(){ load() })
+  fetch(API + "/api/tasks/" + id, {method:"DELETE"}).then(function(){ load() })
 }
 
-load()
+fetch("/locales/" + lang + ".json")
+  .then(function(r){ return r.json() })
+  .then(function(data){
+    t = data
+    applyTranslations()
+    load()
+  })
 </script>
 </body>
 </html>

@@ -1,0 +1,15 @@
+{
+  "title": "Tasks",
+  "heading": "My Tasks",
+  "placeholder": "New task...",
+  "add": "Add",
+  "prio.high": "High",
+  "prio.medium": "Medium",
+  "prio.low": "Low",
+  "filter.label": "Filter:",
+  "filter.all": "All",
+  "filter.pending": "Pending",
+  "filter.done": "Done",
+  "del": "x",
+  "stats": "{pending} pending, {done} done ({total} total)"
+}
