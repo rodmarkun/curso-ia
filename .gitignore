@@ -1,0 +1,27 @@
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+.venv/
+
+# Python caches and test artifacts
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.pyc
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Local machine/editor files
+.DS_Store
+
+# Commit project Claude settings even if a global Git ignore excludes them
+!**/.claude/settings.local.json

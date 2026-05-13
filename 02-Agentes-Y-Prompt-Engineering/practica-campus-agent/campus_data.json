@@ -1,0 +1,59 @@
+{
+  "students": [
+    {
+      "student_id": "alu-001",
+      "name": "Lucia Martin",
+      "email": "lucia.martin@example.edu",
+      "degree": "Ingenieria Informatica",
+      "subjects": [
+        {
+          "code": "IA-101",
+          "name": "IA Aplicada",
+          "grade": 8.2,
+          "status": "aprobada"
+        },
+        {
+          "code": "PROG-201",
+          "name": "Programacion",
+          "grade": 7.4,
+          "status": "aprobada"
+        }
+      ]
+    },
+    {
+      "student_id": "alu-002",
+      "name": "Pablo Sanchez",
+      "email": "pablo.sanchez@example.edu",
+      "degree": "Ingenieria Informatica",
+      "subjects": [
+        {
+          "code": "IA-101",
+          "name": "IA Aplicada",
+          "grade": 6.1,
+          "status": "aprobada"
+        },
+        {
+          "code": "BD-101",
+          "name": "Bases de Datos",
+          "grade": null,
+          "status": "matriculada"
+        }
+      ]
+    },
+    {
+      "student_id": "alu-003",
+      "name": "Ana Lopez",
+      "email": "ana.lopez@example.edu",
+      "degree": "Administracion y Direccion de Empresas",
+      "subjects": [
+        {
+          "code": "EST-101",
+          "name": "Estadistica",
+          "grade": 9.0,
+          "status": "aprobada"
+        }
+      ]
+    }
+  ]
+}
+
