@@ -1,0 +1,19 @@
+[project]
+name = "ejemplo-mcp-y-rag"
+version = "0.1.0"
+description = "Ejemplo básico de RAG con Streamlit, Chroma persistente y MCP"
+requires-python = ">=3.11"
+dependencies = [
+    "streamlit",
+    "python-dotenv",
+    "langchain-ollama",
+    "mcp",
+    "chromadb",
+    "pypdf",
+    "pandas",
+    "openpyxl",
+    "sentence-transformers",
+]
+
+[tool.uv]
+package = false
