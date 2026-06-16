@@ -1,0 +1,93 @@
+{
+  "plan_mantenimiento_laboratorios_ingenieria": {
+    "curso": "2026/2027",
+    "centro": "Escuela Técnica Superior de Ingeniería",
+    "responsable_general": "Coordinación de Laboratorios Docentes",
+    "objetivo": "Definir revisiones preventivas, controles de seguridad y criterios de disponibilidad para los laboratorios docentes de electrónica, robótica, redes, fabricación y automatización.",
+    "laboratorios": [
+      {
+        "id": "LAB-A",
+        "nombre": "Electrónica e Instrumentación",
+        "capacidad_estudiantes": 28,
+        "equipamiento_critico": ["osciloscopios", "fuentes regulables", "estaciones de soldadura", "multímetros"],
+        "riesgos_principales": ["cortocircuitos", "quemaduras leves", "daño por descarga electrostática"],
+        "frecuencia_revision": "mensual"
+      },
+      {
+        "id": "LAB-B",
+        "nombre": "Robótica Móvil y Sistemas Embebidos",
+        "capacidad_estudiantes": 24,
+        "equipamiento_critico": ["robots móviles", "baterías", "sensores", "microcontroladores"],
+        "riesgos_principales": ["baterías mal almacenadas", "cables sueltos", "impactos de prototipos"],
+        "frecuencia_revision": "quincenal durante periodo de proyectos"
+      },
+      {
+        "id": "LAB-C",
+        "nombre": "Redes y Comunicaciones Industriales",
+        "capacidad_estudiantes": 30,
+        "equipamiento_critico": ["switches gestionables", "puntos de acceso", "Raspberry Pi", "gateways MQTT"],
+        "riesgos_principales": ["configuración errónea de VLAN", "exposición accidental de servicios", "pérdida de tarjetas SD"],
+        "frecuencia_revision": "mensual"
+      },
+      {
+        "id": "LAB-D",
+        "nombre": "Fabricación Digital y Prototipado",
+        "capacidad_estudiantes": 18,
+        "equipamiento_critico": ["impresoras 3D", "mini CNC", "herramientas manuales", "EPI"],
+        "riesgos_principales": ["atrapamiento", "quemaduras", "partículas", "uso sin supervisión"],
+        "frecuencia_revision": "semanal"
+      }
+    ],
+    "tareas_programadas": [
+      {
+        "codigo": "MT-001",
+        "descripcion": "Comprobación visual de cableado, conectores y estado general de puestos de prácticas.",
+        "periodicidad": "mensual",
+        "evidencia": "lista de comprobación firmada y fotografía de incidencias",
+        "criterio_cierre": "todos los puestos seguros o incidencia registrada con fecha de resolución"
+      },
+      {
+        "codigo": "MT-002",
+        "descripcion": "Verificación de limitación de corriente en fuentes de alimentación regulables.",
+        "periodicidad": "trimestral",
+        "evidencia": "tabla de medidas por equipo",
+        "criterio_cierre": "desviación inferior al 5% o equipo retirado"
+      },
+      {
+        "codigo": "MT-003",
+        "descripcion": "Revisión de baterías Li-Ion: tensión, hinchazón, estado de conectores y almacenamiento en armario ignífugo.",
+        "periodicidad": "quincenal",
+        "evidencia": "registro de tensión y estado por batería",
+        "criterio_cierre": "baterías defectuosas segregadas para reciclaje"
+      },
+      {
+        "codigo": "MT-004",
+        "descripcion": "Actualización de imágenes base para Raspberry Pi y máquinas virtuales de redes.",
+        "periodicidad": "antes de cada semestre",
+        "evidencia": "hash SHA256 de imagen publicada y changelog",
+        "criterio_cierre": "imagen validada en al menos dos equipos"
+      },
+      {
+        "codigo": "MT-005",
+        "descripcion": "Limpieza, engrase y comprobación de holguras en impresoras 3D y mini CNC.",
+        "periodicidad": "mensual",
+        "evidencia": "registro de mantenimiento mecánico",
+        "criterio_cierre": "pieza de prueba dentro de tolerancia definida"
+      }
+    ],
+    "indicadores": {
+      "disponibilidad_objetivo_porcentaje": 95,
+      "tiempo_maximo_resolucion_incidencia_dias": 7,
+      "porcentaje_minimo_puestos_operativos_para_practica": 85,
+      "revision_seguridad_obligatoria_antes_de_proyectos": true
+    },
+    "procedimiento_incidencias": [
+      "Registrar la incidencia en la hoja compartida del laboratorio con fecha, equipo y descripción.",
+      "Etiquetar físicamente el equipo como 'No usar' si existe riesgo para personas o material.",
+      "Asignar responsable de diagnóstico en un plazo máximo de dos días lectivos.",
+      "Documentar causa raíz, acción correctiva y prueba de verificación.",
+      "Cerrar la incidencia únicamente cuando el responsable de laboratorio confirme disponibilidad."
+    ],
+    "notas": "Documento ficticio de ejemplo para pruebas de clasificación, búsqueda y extracción de datos en un sistema RAG/MCP. No contiene información sensible ni configuraciones reales."
+  }
+}

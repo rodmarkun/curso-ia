@@ -1,0 +1,22 @@
+[project]
+name = "ejemplo-llmops-langfuse-rag"
+version = "0.1.0"
+description = "Demo docente de RAG con Streamlit, Chroma, Langfuse, evaluaciones y selección de modelo"
+requires-python = ">=3.11"
+dependencies = [
+    "streamlit",
+    "python-dotenv",
+    "langchain-ollama",
+    "langchain-openai",
+    "mcp",
+    "chromadb",
+    "pypdf",
+    "pandas",
+    "openpyxl",
+    "sentence-transformers",
+    "langfuse",
+]
+
+
+[tool.uv]
+package = false

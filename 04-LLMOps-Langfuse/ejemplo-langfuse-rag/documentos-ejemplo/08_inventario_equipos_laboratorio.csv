@@ -1,0 +1,21 @@
+codigo,nombre_equipo,categoria,ubicacion,unidades,estado,fecha_revision,responsable,observaciones
+LAB-OSC-001,Osciloscopio digital 100 MHz,Instrumentación,Laboratorio A - Mesa 1,2,Operativo,2026-03-12,Técnico de laboratorio,Calibración vigente hasta marzo de 2027
+LAB-FUN-002,Generador de funciones 25 MHz,Instrumentación,Laboratorio A - Mesa 2,3,Operativo,2026-03-15,Técnico de laboratorio,Incluye sondas BNC nuevas
+LAB-MUL-003,Multímetro digital RMS,Instrumentación,Armario 1,18,Operativo,2026-02-20,Coordinador de prácticas,Se recomienda etiquetado individual
+LAB-ROB-004,Robot móvil diferencial,Robótica,Laboratorio B - Estantería 2,10,Revisión parcial,2026-04-02,Profesor de Robótica,Cuatro unidades requieren sustitución de ruedas
+LAB-FPG-005,Placa FPGA educativa,Electrónica digital,Laboratorio C - Armario 3,16,Operativo,2026-01-30,Profesor de Sistemas Digitales,Actualizar imagen de ejemplos antes del curso
+LAB-ARD-006,Kit microcontrolador Arduino compatible,Electrónica,Laboratorio B - Cajón 4,35,Operativo,2026-04-10,Técnico de laboratorio,Faltan 7 cables USB-C
+LAB-RPI-007,Raspberry Pi 5 con carcasa,Computación embebida,Laboratorio C - Armario 1,12,Operativo,2026-04-18,Profesor de Redes,Imágenes SD preparadas para prácticas de gateway MQTT
+LAB-SWI-008,Switch gestionable 8 puertos,Redes,Laboratorio Redes - Rack 1,8,Operativo,2026-03-27,Profesor de Redes,VLAN configuradas para prácticas
+LAB-APW-009,Punto de acceso WiFi 6,Redes,Laboratorio Redes - Techo,3,Operativo,2026-03-27,Profesor de Redes,SSID docente aislado de red corporativa
+LAB-IMP-010,Impresora 3D FDM,Fabricación,Laboratorio Taller,4,Operativo,2026-02-11,Técnico de taller,Una boquilla sustituida recientemente
+LAB-CAM-011,Cámara industrial USB,Visión artificial,Laboratorio D - Mesa visión,6,Operativo,2026-04-05,Profesor de Visión,Comprobar iluminación homogénea
+LAB-PLC-012,PLC compacto didáctico,Automatización,Laboratorio Industrial - Armario PLC,6,Operativo,2026-01-18,Profesor de Automatización,Firmware actualizado
+LAB-HMI-013,Panel HMI 7 pulgadas,Automatización,Laboratorio Industrial - Armario PLC,4,Operativo,2026-01-18,Profesor de Automatización,Plantillas Modbus disponibles
+LAB-SEN-014,Sensor ultrasónico HC-SR04,Sensórica,Armario sensores,58,Operativo,2026-04-12,Coordinador de prácticas,Revisar conectores en diez unidades
+LAB-IMU-015,Unidad IMU 9 ejes,Sensórica,Armario sensores,18,Operativo,2026-04-12,Profesor de Robótica,Calibración magnética documentada
+LAB-BAT-016,Batería Li-Ion protegida,Energía,Armario ignífugo,40,Operativo,2026-04-22,Técnico de prevención,Carga entre 40% y 60% para almacenamiento
+LAB-SEG-017,Gafas de seguridad,EPI,Entrada taller,30,Operativo,2026-02-01,Técnico de prevención,Reposición recomendada para septiembre
+LAB-SOL-018,Estación de soldadura,Fabricación electrónica,Laboratorio A - Zona soldadura,6,Operativo,2026-03-06,Técnico de laboratorio,Puntas limpias y estaño sin plomo disponible
+LAB-FUE-019,Fuente alimentación regulable,Instrumentación,Laboratorio A - Mesa 3,6,Operativo,2026-02-28,Técnico de laboratorio,Limitación de corriente comprobada
+LAB-CNC-020,Mini CNC educativa,Fabricación,Laboratorio Taller,1,Requiere revisión,2026-04-25,Técnico de taller,Holgura detectada en eje X; no usar hasta ajuste

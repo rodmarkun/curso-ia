@@ -1,0 +1,11 @@
+streamlit
+python-dotenv
+langchain-ollama
+langchain-openai
+mcp
+chromadb
+pypdf
+pandas
+openpyxl
+sentence-transformers
+langfuse

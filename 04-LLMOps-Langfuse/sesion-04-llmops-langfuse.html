@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sesión 04 · LLMOps, Langfuse y Arquitectura de Aplicaciones IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff;--ink:#080808;--muted:#6f6f6f;--line:#e8e8e8;
+    --amber:#d97706;--teal:#0f9f9a;--blue:#2563eb;--red:#b91c1c;--green:#15803d;
+    --paper:#f7f7f4;--dark:#101316;--violet:#6d28d9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+  .deck{position:fixed;inset:0}
+  .slide{position:absolute;inset:0;display:grid;grid-template-rows:auto 1fr auto;gap:22px;padding:46px 54px;opacity:0;transform:translateY(16px);transition:.32s ease;pointer-events:none;overflow:hidden}
+  .slide.active{opacity:1;transform:none;pointer-events:auto}
+  .top,.bot{display:flex;justify-content:space-between;align-items:center;gap:14px;font-family:'JetBrains Mono',monospace;color:var(--muted);font-size:15px}
+  .top{border-bottom:1px solid var(--line);padding-bottom:13px}.bot{border-top:1px dashed var(--line);padding-top:11px}
+  .badge{border:1px solid var(--ink);padding:5px 10px;background:white;color:var(--ink);font-weight:500}.badge:before{content:'●';color:var(--amber);margin-right:8px;font-size:11px}
+  h1.hero{font-size:76px;line-height:.96;letter-spacing:-.055em;font-weight:800;max-width:10.5ch}
+  h2{font-size:50px;line-height:1.03;letter-spacing:-.035em;font-weight:800;max-width:16ch}
+  h3{font-size:25px;line-height:1.15;letter-spacing:-.015em;font-weight:700}
+  p{font-size:24px;line-height:1.44;color:#1d1d1d;max-width:54ch}.lede{font-size:28px;line-height:1.38;max-width:44ch}.mono{font-family:'JetBrains Mono',monospace}.amber{color:var(--amber)}.teal{color:var(--teal)}.blue{color:var(--blue)}.red{color:var(--red)}.green{color:var(--green)}
+  .body{min-height:0;display:flex;align-items:center}.row2{display:grid;grid-template-columns:1.06fr .94fr;gap:52px;width:100%;align-items:center}.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;width:100%}.stack{display:flex;flex-direction:column;gap:18px}.small{font-size:18px;line-height:1.45}.tiny{font-size:13px;line-height:1.4;color:var(--muted);font-family:'JetBrains Mono',monospace}
+  ul{list-style:none;display:flex;flex-direction:column;gap:13px}li{position:relative;padding-left:28px;font-size:22px;line-height:1.38}li:before{content:'›';position:absolute;left:0;color:var(--amber);font-family:'JetBrains Mono',monospace;font-weight:700}ul.ok li:before{content:'✓';color:var(--green)}ul.bad li:before{content:'✕';color:var(--red)}
+  .card{border:1px solid var(--line);background:white;padding:22px;box-shadow:0 14px 32px rgba(0,0,0,.045)}.card.dark{background:var(--dark);color:white;border-color:#333}.card.dark p,.card.dark li{color:#f4f4f4}.card.tint{background:var(--paper)}.card.warn{border-color:#f3c7c7;background:#fff7f7}.card.ok{border-color:#bfe5cd;background:#f7fff9}
+  .num{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--muted);margin-bottom:10px}.big{font-size:55px;font-weight:800;letter-spacing:-.05em}.pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);padding:7px 10px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:13px;background:white}.pills{display:flex;flex-wrap:wrap;gap:9px}
+  .diagram{position:relative;min-height:350px}.node{position:absolute;border:1px solid var(--ink);background:white;padding:13px 14px;font-family:'JetBrains Mono',monospace;font-size:15px;box-shadow:8px 8px 0 #f0f0f0}.arrow{position:absolute;height:2px;background:var(--ink);transform-origin:left center}.arrow:after{content:'';position:absolute;right:-1px;top:-5px;border-left:10px solid var(--ink);border-top:6px solid transparent;border-bottom:6px solid transparent}.code{font-family:'JetBrains Mono',monospace;background:#111;color:#f4f4f4;padding:18px;font-size:17px;line-height:1.45;white-space:pre-wrap;border:1px solid #333}.trace{display:grid;grid-template-columns:1fr 1fr;gap:14px}.trace .card{padding:16px}.trace h3{font-size:19px}.trace p{font-size:16px;color:#333}.matrix{display:grid;grid-template-columns:1.15fr .85fr .9fr;gap:1px;background:var(--line);border:1px solid var(--line)}.matrix div{background:white;padding:13px;font-size:17px}.matrix .head{background:#111;color:white;font-family:'JetBrains Mono',monospace;font-size:14px}.quote{font-size:34px;line-height:1.22;letter-spacing:-.025em;font-weight:700;border-left:9px solid var(--amber);padding-left:22px;max-width:24ch}.footer-note{position:absolute;right:54px;bottom:46px;font-family:'JetBrains Mono',monospace;color:#b7b7b7;font-size:120px;font-weight:700;z-index:-1}.cover-visual{position:relative;min-height:410px;background:linear-gradient(135deg,#111 0%,#171b1f 62%,#222 100%);color:white;border:1px solid #2a2f34;box-shadow:0 24px 55px rgba(0,0,0,.14);padding:28px;overflow:hidden}.cover-visual:before{content:'';position:absolute;inset:22px;border:1px solid rgba(255,255,255,.12)}.cover-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:38px 38px;mask-image:linear-gradient(140deg,black,transparent 82%)}.cover-core{position:absolute;left:50%;top:50%;width:145px;height:145px;transform:translate(-50%,-50%);border:2px solid var(--amber);background:#111;display:grid;place-items:center;font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;box-shadow:0 0 0 14px rgba(217,119,6,.08),0 0 70px rgba(217,119,6,.25)}.cover-card{position:absolute;background:white;color:#111;border:1px solid #ddd;padding:13px 14px;min-width:132px;box-shadow:8px 8px 0 rgba(255,255,255,.08)}.cover-card b{display:block;font-size:18px;margin-bottom:3px}.cover-card span{font-family:'JetBrains Mono',monospace;font-size:12px;color:#676767}.cover-card.c1{left:34px;top:42px}.cover-card.c2{right:38px;top:54px}.cover-card.c3{left:52px;bottom:58px}.cover-card.c4{right:52px;bottom:50px}.cover-line{position:absolute;height:2px;background:rgba(255,255,255,.38);transform-origin:left center}.cover-line:after{content:'';position:absolute;right:-1px;top:-4px;border-left:8px solid rgba(255,255,255,.55);border-top:5px solid transparent;border-bottom:5px solid transparent}.cover-chip{position:absolute;left:28px;bottom:22px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#bdbdbd}.hero-meta{display:flex;gap:9px;flex-wrap:wrap}.hero-meta span{font-family:'JetBrains Mono',monospace;border:1px solid var(--line);padding:6px 9px;background:#fff;font-size:13px;color:#333}.agenda{counter-reset:item;display:grid;grid-template-columns:repeat(2,1fr);gap:14px;width:100%}.agenda .card{display:flex;gap:15px;align-items:flex-start}.agenda .card:before{counter-increment:item;content:counter(item,decimal-leading-zero);font-family:'JetBrains Mono',monospace;color:var(--amber);font-size:15px;margin-top:4px}.agenda p{font-size:18px}.kbd{border:1px solid #bbb;padding:2px 7px;border-radius:3px;background:#fafafa;color:#333;font-family:'JetBrains Mono',monospace}.two-rows{display:grid;grid-template-rows:auto auto;gap:18px;width:100%}
+  @media(max-width:850px){.slide{padding:28px}.row2,.row3,.agenda{grid-template-columns:1fr}h1.hero{font-size:52px}h2{font-size:38px}p,.lede{font-size:21px}.slide{overflow:auto}.bot{display:none}}
+</style>
+</head>
+<body>
+<div class="deck">
+
+<section class="slide active">
+  <div class="top"><span class="badge">Sesión 04</span><span>UEx · Servicio de Informática</span></div>
+  <div class="body row2">
+    <div class="stack">
+      <div class="tiny">LLMOps · Langfuse · Arquitectura · Modelos</div>
+      <h1 class="hero">Del <span class="amber">prototipo</span> al servicio IA</h1>
+      <p class="lede">Convertir una demo RAG/MCP en un sistema observable, evaluable y operable.</p>
+    </div>
+  </div>
+  <div class="bot"><span>04-LLMOps-Langfuse</span><span></span></div>
+  <div class="footer-note">04</div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Continuidad</span><span>qué construimos hasta ahora</span></div>
+  <div class="body row3">
+    <div class="card"><div class="num">01</div><h3>Agent harness</h3><p class="small">Claude Code / permisos / flujos de trabajo / agentes que pueden tocar un repo.</p></div>
+    <div class="card"><div class="num">02</div><h3>Agentes y prompts</h3><p class="small">LangChain, tools, memoria, seguridad, evaluaciones iniciales.</p></div>
+    <div class="card"><div class="num">03</div><h3>RAG + MCP</h3><p class="small">Streamlit, Chroma, documentos, retrieval y herramientas expuestas por MCP.</p></div>
+  </div>
+  <div class="bot"><span>la pregunta de hoy</span><span>¿qué falta para ponerlo delante de usuarios reales?</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Agenda</span><span>2.5–3h</span></div>
+  <div class="body">
+    <div class="agenda">
+      <div class="card"><div><h3>De demo a servicio</h3><p>Qué rompe cuando una app IA sale del portátil.</p></div></div>
+      <div class="card"><div><h3>Arquitectura</h3><p>UI, backend, retrieval/tools, prompts, modelo, checks y trazas.</p></div></div>
+      <div class="card"><div><h3>Langfuse</h3><p>Flight recorder: trazas, generations, prompt management, scores.</p></div></div>
+      <div class="card"><div><h3>Evals</h3><p>Separar fallos de retrieval, generación, seguridad y operación.</p></div></div>
+      <div class="card"><div><h3>Modelo/GPU</h3><p>VRAM, cuantización, contexto, concurrencia, coste y latencia.</p></div></div>
+      <div class="card"><div><h3>Calidad no técnica</h3><p>Scorecard diario para evaluar outputs antes de actuar.</p></div></div>
+    </div>
+  </div>
+  <div class="bot"><span>mensaje central</span><span>dejar de adivinar; empezar a medir</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Incidente inicial</span><span>pregunta para abrir clase</span></div>
+  <div class="body row2">
+    <div class="stack">
+      <h2>El asistente da una respuesta <span class="red">equivocada</span>.</h2>
+      <p>Un usuario pregunta por una política de evaluación y el RAG responde con información antigua o privada.</p>
+    </div>
+    <div class="card warn stack">
+      <h3>¿Qué necesitamos para depurarlo?</h3>
+      <ul class="bad">
+        <li>¿Qué preguntó exactamente el usuario?</li>
+        <li>¿Qué documentos recuperó el sistema?</li>
+        <li>¿Qué prompt y versión se usaron?</li>
+        <li>¿Qué modelo respondió?</li>
+        <li>¿Quién decide si esto se corrige o escala?</li>
+      </ul>
+    </div>
+  </div>
+  <div class="bot"><span>sin traza no hay postmortem</span><span>solo opiniones</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Arquitectura</span><span>la app como sistema, no como prompt</span></div>
+  <div class="body row2">
+    <div class="stack">
+      <h2>Capas de una aplicación IA</h2>
+      <p>Cada capa puede fallar de forma distinta. Si no las separamos, culpamos al modelo por todo.</p>
+      <div class="pills"><span class="pill">trace_id</span><span class="pill">prompt_version</span><span class="pill">model</span><span class="pill">sources</span><span class="pill">scores</span></div>
+    </div>
+    <div class="diagram">
+      <div class="node" style="left:5px;top:20px">UI</div>
+      <div class="node" style="left:160px;top:20px">Backend</div>
+      <div class="node" style="left:335px;top:20px">Policy</div>
+      <div class="node" style="left:60px;top:145px">Retrieval / MCP</div>
+      <div class="node" style="left:275px;top:145px">Prompt version</div>
+      <div class="node" style="left:135px;top:270px">Model</div>
+      <div class="node" style="left:315px;top:270px">Checks + Trace</div>
+      <div class="arrow" style="left:66px;top:43px;width:82px"></div>
+      <div class="arrow" style="left:235px;top:43px;width:88px"></div>
+      <div class="arrow" style="left:232px;top:70px;width:115px;transform:rotate(90deg)"></div>
+      <div class="arrow" style="left:200px;top:168px;width:63px"></div>
+      <div class="arrow" style="left:325px;top:195px;width:92px;transform:rotate(124deg)"></div>
+      <div class="arrow" style="left:218px;top:293px;width:84px"></div>
+    </div>
+  </div>
+  <div class="bot"><span>mala respuesta ≠ “modelo malo”</span><span>puede fallar ingesta, chunking, retrieval, prompt, modelo o UX</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Langfuse</span><span>flight recorder</span></div>
+  <div class="body row2">
+    <div class="stack">
+      <h2>Langfuse no es una demo de dashboard.</h2>
+      <p>Lo usamos para contestar preguntas de investigación cuando algo falla.</p>
+    </div>
+    <div class="trace">
+      <div class="card"><h3>Trace</h3><p>Una request completa desde usuario hasta respuesta.</p></div>
+      <div class="card"><h3>Span</h3><p>Paso interno: retrieval, tool call, reranking, checks.</p></div>
+      <div class="card"><h3>Generation</h3><p>Llamada al LLM: input, output, modelo, tokens, latencia.</p></div>
+      <div class="card"><h3>Score</h3><p>Señal humana o automática: grounded, safe, useful.</p></div>
+      <div class="card"><h3>Dataset</h3><p>Casos guardados para repetir pruebas.</p></div>
+      <div class="card"><h3>Experiment</h3><p>Comparar prompts/modelos/retrieval antes de lanzar.</p></div>
+    </div>
+  </div>
+  <div class="bot"><span>demo</span><span>abrir traza local → activar Langfuse → ver spans y generations</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Demo 1</span><span>traza local primero</span></div>
+  <div class="body row2">
+    <div class="stack">
+      <h2>Antes del SaaS: enseñar el JSON.</h2>
+      <p>La traza local hace visible qué datos necesita cualquier observabilidad seria.</p>
+    </div>
+    <pre class="code">{
+  "trace_id": "...",
+  "user_id": "test",
+  "prompt_name": "rag-basico",
+  "model": "gpt-oss:120b",
+  "sources": ["sistemas_digitales.md"],
+  "latency_ms": 1842,
+  "scores": {"has_sources": true}
+}</pre>
+  </div>
+  <div class="bot"><span>archivo</span><span>ejemplo-langfuse-rag/streamlit_app.py</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Demo 2</span><span>Prompt Management</span></div>
+  <div class="body row2">
+    <div class="card tint stack">
+      <h2>Una prompt es configuración de producto.</h2>
+      <p>No se cambia “a mano” en producción sin versión, comparación y rollback.</p>
+    </div>
+    <div class="stack">
+      <div class="card"><div class="num">01</div><h3>Streamlit lista prompts desde Langfuse</h3><p class="small">La UI no hardcodea variantes.</p></div>
+      <div class="card"><div class="num">02</div><h3>Langfuse guarda labels y config</h3><p class="small">Modelo, temperatura, contexto, k, versión.</p></div>
+      <div class="card"><div class="num">03</div><h3>Evals bloquean regresiones</h3><p class="small">Prompt nueva ≠ lanzamiento automático.</p></div>
+    </div>
+  </div>
+  <div class="bot"><span>frase</span><span>si cambia comportamiento, es release</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Evals</span><span>separar tipos de fallo</span></div>
+  <div class="body">
+    <div class="matrix">
+      <div class="head">Capa</div><div class="head">Pregunta</div><div class="head">Métrica / señal</div>
+      <div>Ingesta</div><div>¿Está el documento correcto?</div><div>docs ingeridos</div>
+      <div>Chunking</div><div>¿El fragmento contiene la respuesta?</div><div>coverage humano</div>
+      <div>Retrieval</div><div>¿La fuente aparece en top-k?</div><div>source hit rate@k</div>
+      <div>Prompt</div><div>¿Fuerza fuentes y rechazo?</div><div>pass/fail por caso</div>
+      <div>Generación</div><div>¿Responde bien con contexto?</div><div>rúbrica + términos</div>
+      <div>Seguridad</div><div>¿Rechaza lo sensible?</div><div>forbidden claims</div>
+      <div>Operación</div><div>¿Es sostenible?</div><div>latencia, coste, errores</div>
+    </div>
+  </div>
+  <div class="bot"><span>idea clave</span><span>no evaluamos “el modelo”; evaluamos el sistema</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Demo 3</span><span>retrieval vs generación</span></div>
+  <div class="body row2">
+    <div class="stack">
+      <h2>Dos scripts, dos preguntas distintas.</h2>
+      <p>Si retrieval falla, arreglar prompt casi nunca soluciona el problema.</p>
+    </div>
+    <div class="stack">
+      <pre class="code">uv run python evaluacion_retrieval.py</pre>
+      <pre class="code">uv run python evaluacion_generacion.py \
+  --prompt-name rag-basico</pre>
+      <pre class="code">uv run python evaluacion_comparativa.py</pre>
+    </div>
+  </div>
+  <div class="bot"><span>pregunta para clase</span><span>¿qué regresión bloquearía producción?</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Loop LLMOps</span><span>de trazas a release gates</span></div>
+  <div class="body row2">
+    <div class="stack">
+      <h2>El ciclo operativo</h2>
+      <p>Las trazas no son el final: alimentan datasets, experimentos y decisiones de release.</p>
+    </div>
+    <div class="card dark">
+      <ul class="ok">
+        <li>Detectar caso interesante en trazas.</li>
+        <li>Convertirlo en dataset de evaluación.</li>
+        <li>Probar prompt/modelo/retrieval alternativo.</li>
+        <li>Comparar calidad, seguridad, latencia y coste.</li>
+        <li>Lanzar solo si supera el gate.</li>
+        <li>Monitorizar y hacer rollback si empeora.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="bot"><span>operar IA</span><span>hacer que los fallos mejoren el sistema</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Modelo/GPU</span><span>decisión de arquitectura</span></div>
+  <div class="body row2">
+    <div class="stack">
+      <h2>“¿Cabe?” es solo la primera pregunta.</h2>
+      <p>La elección de modelo afecta calidad, privacidad, latencia, coste, mantenimiento y experiencia de usuario.</p>
+    </div>
+    <div class="card tint stack">
+      <div class="big mono">VRAM ≈ W + KV + O</div>
+      <p><b>W</b>: pesos del modelo · <b>KV</b>: caché por contexto/concurrencia · <b>O</b>: overhead runtime.</p>
+      <div class="pills"><span class="pill">cuantización</span><span class="pill">contexto</span><span class="pill">batch</span><span class="pill">GQA/MoE</span><span class="pill">CPU offload</span></div>
+    </div>
+  </div>
+  <div class="bot"><span>demo</span><span>abrir LLMFitCheck o una calculadora equivalente</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Demo 4</span><span>LLMFitCheck</span></div>
+  <div class="body row3">
+    <div class="card"><div class="big">7B</div><h3>Q4 en 8–12GB</h3><p class="small">Buen punto de entrada para asistente local pequeño.</p></div>
+    <div class="card"><div class="big">14B</div><h3>Q4 en 16GB</h3><p class="small">Mejor calidad, aún razonable en hardware consumer.</p></div>
+    <div class="card warn"><div class="big">70B</div><h3>Q4 en 24GB</h3><p class="small">Puede no caber con contexto/concurrencia sin multi-GPU u offload.</p></div>
+  </div>
+  <div class="bot"><span>mensaje</span><span>caber en VRAM no significa ser el modelo correcto</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Runpod / vLLM</span><span>cuando operas tu propio modelo</span></div>
+  <div class="body row2">
+    <div class="stack">
+      <h2>De API externa a endpoint propio.</h2>
+      <p>Runpod sirve para enseñar decisiones reales: GPU, imagen, volumen, flags, token, coste por hora y apagado.</p>
+    </div>
+    <pre class="code">python -m vllm.entrypoints.openai.api_server \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --model Qwen/Qwen2.5-7B-Instruct \
+  --dtype auto \
+  --max-model-len 8192</pre>
+  </div>
+  <div class="bot"><span>clave</span><span>OpenAI-compatible permite cambiar proveedor sin reescribir toda la app</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">No técnicos</span><span>valor diario real</span></div>
+  <div class="body row2">
+    <div class="stack">
+      <h2>Control de calidad de outputs IA.</h2>
+      <p>No es “saber prompts”. Es saber cuándo confiar, corregir, pedir evidencia o escalar.</p>
+    </div>
+    <div class="card ok stack">
+      <h3>Hábito diario</h3>
+      <p class="quote">Input → contexto → modelo → output → decisión humana → consecuencia</p>
+      <p>Cuanto mayor sea la consecuencia, más fuerte debe ser la revisión.</p>
+    </div>
+  </div>
+  <div class="bot"><span>para negocio</span><span>menos alucinaciones enviadas, mejores decisiones</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Scorecard</span><span>rúbrica 1–5</span></div>
+  <div class="body row2">
+    <div class="stack">
+      <h2>7 preguntas antes de actuar</h2>
+      <p>Sirve para emails, resúmenes, informes, propuestas, análisis y decisiones internas.</p>
+    </div>
+    <div class="matrix" style="grid-template-columns:.75fr 1.25fr">
+      <div class="head">Dimensión</div><div class="head">Pregunta</div>
+      <div>Correctitud</div><div>¿Es verdad?</div>
+      <div>Completitud</div><div>¿Falta algo importante?</div>
+      <div>Evidencia</div><div>¿Está respaldado por fuentes?</div>
+      <div>Relevancia</div><div>¿Responde a la necesidad real?</div>
+      <div>Tono/formato</div><div>¿Sirve para el destinatario?</div>
+      <div>Riesgo</div><div>¿Qué pasa si está mal?</div>
+      <div>Acción</div><div>¿Se puede actuar de forma segura?</div>
+    </div>
+  </div>
+  <div class="bot"><span>puente</span><span>scorecard personal = score de Langfuse en un sistema</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Mini taller</span><span>5 minutos</span></div>
+  <div class="body row2">
+    <div class="card warn stack">
+      <h3>Output malo</h3>
+      <p>“El cliente está listo para comprar y solo necesita precio. Siguiente paso: enviar descuento.”</p>
+    </div>
+    <div class="stack">
+      <h2>¿Qué está mal?</h2>
+      <ul class="bad">
+        <li>Sobrestima intención de compra.</li>
+        <li>Omite bloqueos: onboarding, seguridad, legal, procurement.</li>
+        <li>Propone acción equivocada.</li>
+        <li>Riesgo comercial alto si se envía tal cual.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="bot"><span>mejor output</span><span>interesado, no listo; enviar documento de seguridad antes del viernes</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Mapa mental</span><span>personas ↔ LLMOps</span></div>
+  <div class="body">
+    <div class="matrix" style="grid-template-columns:1fr 1fr">
+      <div class="head">Hábito personal</div><div class="head">Equivalente LLMOps</div>
+      <div>Guardar prompt/input</div><div>Trace input</div>
+      <div>Guardar output</div><div>Trace output</div>
+      <div>Puntuar calidad</div><div>Score</div>
+      <div>Marcar tipo de error</div><div>Error taxonomy</div>
+      <div>Conservar ejemplos buenos/malos</div><div>Dataset</div>
+      <div>Comparar nuevo prompt</div><div>Experiment</div>
+      <div>Escalar outputs de riesgo</div><div>Human-in-the-loop</div>
+    </div>
+  </div>
+  <div class="bot"><span>valor para todos</span><span>la operación empieza como hábito individual</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Checklist final</span><span>antes de producción</span></div>
+  <div class="body row2">
+    <div class="stack">
+      <h2>¿Lo podemos operar?</h2>
+      <p>Una app IA no está lista por responder bien en una demo. Está lista cuando puede fallar de forma investigable.</p>
+    </div>
+    <div class="card dark">
+      <ul class="ok">
+        <li>¿Puedo reconstruir qué pasó?</li>
+        <li>¿Sé qué documentos se usaron?</li>
+        <li>¿Sé qué prompt/modelo produjo la respuesta?</li>
+        <li>¿Tengo casos de evaluación críticos?</li>
+        <li>¿Sé cuándo rechazar o escalar?</li>
+        <li>¿Puedo comparar versiones antes de lanzar?</li>
+      </ul>
+    </div>
+  </div>
+  <div class="bot"><span>cierre</span><span>trazas + evals + owners + rollback</span></div>
+</section>
+
+<section class="slide">
+  <div class="top"><span class="badge">Takeaway</span><span>sesión 04</span></div>
+  <div class="body row2">
+    <div class="stack">
+      <h2>La IA fiable no nace del prompt perfecto.</h2>
+      <p class="lede">Nace de una arquitectura observable, casos de evaluación, decisiones de modelo conscientes y revisión humana proporcional al riesgo.</p>
+    </div>
+    <div class="card tint stack">
+      <h3>Frase para recordar</h3>
+      <p class="quote">Dejar de preguntar “¿funciona?” y empezar a preguntar “¿cómo lo sé?”.</p>
+    </div>
+  </div>
+  <div class="bot"><span>fin</span><span>04-LLMOps-Langfuse/sesion-04-llmops-langfuse.html</span></div>
+</section>
+
+</div>
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+let idx=0;
+function show(n){idx=Math.max(0,Math.min(slides.length-1,n));slides.forEach((s,i)=>{s.classList.toggle('active',i===idx);s.classList.toggle('prev',i<idx)});history.replaceState(null,'','#'+(idx+1));}
+function init(){const h=parseInt(location.hash.replace('#',''),10);if(h)idx=h-1;show(idx)}
+addEventListener('keydown',e=>{if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();show(idx+1)}if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(idx-1)}if(e.key==='Home')show(0);if(e.key==='End')show(slides.length-1)});
+addEventListener('click',e=>{if(e.shiftKey)show(idx-1);else show(idx+1)});
+init();
+</script>
+</body>
+</html>
