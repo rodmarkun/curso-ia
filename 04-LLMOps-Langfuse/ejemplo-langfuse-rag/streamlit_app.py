@@ -25,15 +25,16 @@ from rag_core import (
     OLLAMA_BASE_URL,
     DEFAULT_NUM_CTX,
     DEFAULT_NUM_PREDICT,
-    DEFAULT_PROMPT_NAME,
     DEFAULT_REASONING,
     DEFAULT_TEMPERATURE,
     OLLAMA_CLOUD_BASE_URL,
     OLLAMA_LOCAL_BASE_URL,
     SimpleRAG,
     get_ollama_base_url_for_mode,
-    list_available_prompts,
 )
+
+# Todo lo de Langfuse vive en su propio módulo: así se ve claro qué añade Langfuse.
+from langfuse_integration import DEFAULT_PROMPT_NAME, is_enabled, list_available_prompts
 
 load_dotenv(override=True)
 
@@ -55,15 +56,14 @@ with st.sidebar:
     k = st.slider("Fragmentos recuperados", min_value=1, max_value=12, value=4)
 
     st.markdown("### Prompt Management")
-    langfuse_env_enabled = os.getenv("LANGFUSE_ENABLED", "false").lower() in {"1", "true", "yes", "on"}
-    send_to_langfuse = st.toggle("Enviar trazas a Langfuse", value=langfuse_env_enabled)
+    send_to_langfuse = st.toggle("Enviar trazas a Langfuse", value=is_enabled())
     if send_to_langfuse:
         if os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY"):
             st.success("Langfuse configurado · crea la prompt manualmente en Prompt Management")
         else:
-            st.warning("Faltan claves de Langfuse; se seguirá mostrando la traza local.")
+            st.warning("Faltan claves de Langfuse; la respuesta funcionará, pero no se enviará ninguna traza.")
     else:
-        st.info("Langfuse desactivado: se usa fallback local y se muestra traza JSON.")
+        st.info("Langfuse desactivado: la app responde sin observabilidad visible.")
 
     if st.button("Refrescar prompts desde Langfuse"):
         st.cache_data.clear()
@@ -80,11 +80,18 @@ with st.sidebar:
     prompt_names = [p["name"] for p in available_prompts] or [DEFAULT_PROMPT_NAME]
     default_index = prompt_names.index(DEFAULT_PROMPT_NAME) if DEFAULT_PROMPT_NAME in prompt_names else 0
     prompt_name = st.selectbox("Prompt", options=prompt_names, index=default_index)
-    selected_prompt = next((p for p in available_prompts if p["name"] == prompt_name), available_prompts[0])
-    prompt_config = selected_prompt.get("config") or {}
-    st.caption(
-        f"Fuente: {selected_prompt.get('source')} · versión: {selected_prompt.get('version') or 'n/a'} · labels: {', '.join(selected_prompt.get('labels') or []) or 'n/a'}"
-    )
+    # La prompt vive en Langfuse: si la lista está vacía, no hay copia local que usar.
+    selected_prompt = next((p for p in available_prompts if p["name"] == prompt_name), None)
+    prompt_config = (selected_prompt or {}).get("config") or {}
+    if selected_prompt is None:
+        st.warning(
+            f"No hay prompts en Langfuse. Crea `{DEFAULT_PROMPT_NAME}` en Prompt Management "
+            "(copia el contenido de ../PROMPT.txt) y pulsa «Refrescar prompts desde Langfuse»."
+        )
+    else:
+        st.caption(
+            f"Fuente: {selected_prompt.get('source')} · versión: {selected_prompt.get('version') or 'n/a'} · labels: {', '.join(selected_prompt.get('labels') or []) or 'n/a'}"
+        )
     with st.expander("Config de la prompt"):
         st.json(prompt_config)
 
@@ -205,7 +212,7 @@ question = st.text_input(
 
 if st.button("Responder", type="primary", disabled=not question.strip()):
     try:
-        with st.spinner("Buscando en Chroma, generando respuesta y creando traza..."):
+        with st.spinner("Buscando en Chroma, generando respuesta y enviando observabilidad a Langfuse..."):
             result = rag.answer(
                 question,
                 k=k,
@@ -235,18 +242,9 @@ if st.button("Responder", type="primary", disabled=not question.strip()):
                 "o cambia a otro modelo. La traza de Langfuse permite comparar este fallo con una respuesta buena."
             )
 
-        trace = result["trace"]
-        st.markdown("### Métricas de traza")
-        c1, c2, c3, c4, c5 = st.columns(5)
-        c1.metric("Latencia", f"{trace['latency_ms']} ms")
-        c2.metric("Tokens estimados", trace["usage"]["total_tokens_estimated"])
-        c3.metric("Fuentes", len(trace["sources"]))
-        c4.metric("Max similitud", trace["scores"]["max_similarity"])
-        c5.metric("User", trace["user_id"])
-
         langfuse_status = result["langfuse"]
         if langfuse_status.get("sent"):
-            st.success(f"Traza enviada a Langfuse: {langfuse_status.get('trace_id')}")
+            st.success(f"Observabilidad enviada a Langfuse: {langfuse_status.get('trace_id')}")
             if langfuse_status.get("trace_url"):
                 st.link_button("Abrir traza en Langfuse", langfuse_status["trace_url"])
         else:
@@ -259,29 +257,17 @@ if st.button("Responder", type="primary", disabled=not question.strip()):
             ):
                 st.text(source["text"][:2000])
 
-        st.markdown("### Herramienta llamada por el agente")
-        for tool_call in trace.get("tool_calls", []):
-            with st.expander(f"{tool_call['name']} · {tool_call['duration_ms']} ms", expanded=True):
-                st.caption(tool_call["description"])
-                st.json({"input": tool_call["input"], "output": tool_call["output"]})
-
-        with st.expander("Ver prompt enviado al modelo"):
-            st.code(result["prompt"], language="text")
-
-        with st.expander("Ver traza local completa JSON"):
-            st.json(trace)
-
 st.divider()
 st.markdown(
     """
 ### Qué enseña esta app
 
 1. **Retrieval**: qué chunks recupera Chroma y con qué similitud.
-2. **Tool use**: el agente llama una herramienta (`tool_inventario_documentos`) antes de generar.
-3. **Generation**: qué prompt ve el modelo y qué respuesta produce.
+2. **Tool use**: el agente llama una herramienta (`tool_inventario_documentos`) antes de generar; se ve en Langfuse, no en la app.
+3. **Generation**: qué respuesta produce el modelo.
 4. **Prompt Management**: el dropdown sale de las prompts disponibles en Langfuse.
 5. **Model config**: modelo, temperatura, contexto y salida quedan trazados.
-6. **Observabilidad**: una traza local explica qué pasó incluso sin Langfuse.
+6. **Observabilidad**: Langfuse centraliza spans, generations, latencia, tokens, prompt y tool calls.
 7. **Evaluación**: los scripts de evaluación separan fallos de recuperación y fallos de generación.
 """
 )

@@ -13,7 +13,6 @@ Streamlit solo lee estos valores desde la prompt seleccionada:
 
 Pegar en el campo de config de Langfuse:
 {
-  "model": "gpt-oss:120b",
   "temperature": 0,
   "num_ctx": 8192,
   "num_predict": 900,

@@ -6,7 +6,6 @@ La sesión sigue `GUION_DEMO_EN_VIVO.md`. No hay documentos auxiliares obligator
 
 ## Materiales que sí se usan
 
-- `GUION_DEMO_EN_VIVO.md` — secuencia exacta de la demo en clase.
 - `sesion-04-llmops-langfuse.html` — presentación visual de apoyo.
 - `INSTRUCCIONES-LANGFUSE` — guía para estudiantes: levantar Langfuse desde el repo con `docker compose up -d`.
 - `PROMPT.txt` — prompt `rag-basico` que hay que crear en Langfuse después de instalarlo desde cero.

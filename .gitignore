@@ -16,6 +16,11 @@ htmlcov/
 *.pyc
 chroma_db/
 
+# Local app/runtime config and generated evaluation outputs
+.streamlit/
+eval_results_*.json
+eval_comparativa.json
+
 # Office lock/temp files
 ~$*
 

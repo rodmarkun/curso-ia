@@ -7,20 +7,21 @@ Flujo base:
 ```text
 documentos → tool_inventario_documentos → chunks → embeddings → Chroma → retrieval → Langfuse prompt → LLM → respuesta
                                          ↓
-                                  traza local / Langfuse
+                                  Langfuse
                                          ↓
                                   evaluación / regresión
 ```
 
 ## Incluye
 
-- `streamlit_app.py`: app web con selector de prompts desde Langfuse, configuración de modelo, traza local y envío opcional a Langfuse.
-- `rag_core.py`: RAG + Chroma + Ollama Cloud/local + endpoints OpenAI-compatible (Runpod/vLLM) + trazas + Langfuse Prompt Management.
+- `streamlit_app.py`: app web con selector de prompts desde Langfuse, configuración de modelo y envío opcional de observabilidad a Langfuse.
+- `rag_core.py`: RAG puro (Chroma + Ollama Cloud/local + endpoints OpenAI-compatible Runpod/vLLM). No sabe nada de Langfuse: solo le pide compilar la prompt y enviar la traza.
+- `langfuse_integration.py`: **todo** lo de Langfuse en un solo archivo (Prompt Management + observabilidad). Es lo único que hay que añadir a un RAG para integrarlo con Langfuse.
 - `mcp_server.py`: servidor MCP heredado, ahora con `prompt_name` en `responder_con_rag`.
-- `eval_cases.json`: casos de evaluación editables.
-- `evaluacion_retrieval.py`: evalúa si la recuperación devuelve las fuentes esperadas.
-- `evaluacion_generacion.py`: evalúa comportamiento de la respuesta con un LLM juez, sin buscar términos exactos.
-- `evaluacion_comparativa.py`: compara versiones de prompt.
+- `eval_cases.json`: casos de evaluación editables (`id`, `question` y `expected_sources` como `fichero -> fragmento(s)`).
+- `eval_common.py`: utilidades compartidas por las dos evaluaciones (carga de casos, aciertos de fragmento/fichero y render de tablas).
+- `evaluacion_retrieval.py`: evalúa si la recuperación devuelve el fragmento esperado (y distingue acierto de fragmento vs de fichero).
+- `evaluacion_generacion.py`: evalúa la respuesta con un LLM juez, sin buscar términos exactos.
 - `documentos-ejemplo/`: documentos de la sesión 03.
 
 ## 1. Instalación
@@ -37,7 +38,7 @@ Edita `.env` y elige una ruta de modelo:
 - **Ollama local:** arranca `ollama serve`, descarga un modelo con `ollama pull <modelo>`, deja `LLM_PROVIDER=ollama` y pon `OLLAMA_BASE_URL=http://localhost:11434`.
 - **Runpod/vLLM/OpenAI-compatible:** pon `LLM_PROVIDER=openai-compatible`, `OPENAI_BASE_URL=<endpoint>` y `OPENAI_API_KEY=<token si aplica>`.
 
-La app también puede funcionar sin Langfuse si desactivas `LANGFUSE_ENABLED`, pero para la demo completa levanta el compose local incluido en esta carpeta.
+La prompt vive en Langfuse (no hay copia en el código), así que para responder necesitas Langfuse activo con la prompt `rag-basico` creada. Levanta el compose local incluido en esta carpeta.
 
 ## 2. Levantar Langfuse local igual que en clase
 
@@ -156,8 +157,8 @@ Después reinicia Streamlit.
 ¿Qué prácticas de laboratorio tiene Sistemas Digitales?
 ```
 
-4. En Streamlit abre la traza local y comprueba que `langfuse.sent` sea `true` o que aparezca una URL de traza.
-5. Entra en `http://localhost:3000` y busca la traza en el proyecto.
+4. En Streamlit comprueba que aparece **Observabilidad enviada a Langfuse**.
+5. Entra en `http://localhost:3000` y abre la traza en el proyecto para ver spans, generaciones, latencia, prompt y tool calls.
 
 La app **no crea prompts automáticamente**. Primero crea a mano `rag-basico` en Langfuse Prompt Management pegando el contenido de `../PROMPT.txt`; después pulsa **Refrescar prompts desde Langfuse** en Streamlit.
 
@@ -237,7 +238,7 @@ La app empieza sin prompts en Langfuse. En clase crea manualmente la primera pro
 rag-basico
 ```
 
-El dropdown de Streamlit se rellena desde las prompts disponibles en Langfuse. Si todavía no hay prompts, verás un fallback local para que la app no se rompa, pero Langfuse seguirá vacío hasta que crees la prompt manualmente. Desde Langfuse puedes crear nuevas versiones/prompts y pulsar **Refrescar prompts desde Langfuse** en la UI.
+El dropdown de Streamlit se rellena desde las prompts disponibles en Langfuse. No hay copia local de la prompt en el código: si todavía no has creado `rag-basico`, el dropdown estará vacío y la app fallará con un error claro al responder hasta que la crees. Desde Langfuse puedes crear nuevas versiones/prompts y pulsar **Refrescar prompts desde Langfuse** en la UI.
 
 La prompt básica incluye config de modelo:
 
@@ -277,7 +278,15 @@ La app envía:
 uv run python evaluacion_retrieval.py
 ```
 
-No llama al LLM. Comprueba si la fuente esperada aparece en top-k.
+No llama al LLM. Cada caso de `eval_cases.json` declara la verdad esperada como
+`fichero -> fragmento(s)` (campo `expected_sources`). La evaluación distingue:
+
+- **acierto de fragmento**: recupera el fragmento exacto que contiene la respuesta;
+- **acierto de fichero**: recupera el fichero correcto aunque sea otro fragmento.
+
+Al terminar imprime una tabla por caso (con ambas columnas) y un resumen con el
+porcentaje de aciertos de fragmento y de fichero. Así se ve cuándo el RAG acierta
+el documento pero falla el trozo concreto.
 
 ## 8. Evaluación de generación
 
@@ -285,17 +294,14 @@ No llama al LLM. Comprueba si la fuente esperada aparece en top-k.
 uv run python evaluacion_generacion.py --prompt-name rag-basico
 ```
 
-Llama al RAG y después entrega pregunta, respuesta y contexto recuperado a un LLM juez. Al terminar muestra un resumen legible, por ejemplo `5/6 casos pasados (83.3%)`, lista los fallos y escribe el JSON completo en `eval_results_<prompt>.json`. Ya no se valida buscando términos exactos.
+Llama al RAG y después entrega pregunta, respuesta y contexto recuperado a un LLM
+juez, que decide semánticamente si la respuesta es correcta y está soportada por el
+contexto (no busca términos exactos). Al terminar imprime una tabla por caso
+(acierto de recuperación, veredicto del juez, score y latencia) y un resumen con el
+porcentaje de respuestas correctas, el de aciertos de recuperación, el score medio y
+la latencia media. El JSON completo se escribe en `eval_results_<prompt>.json`.
 
-## 9. Comparativa
-
-```bash
-uv run python evaluacion_comparativa.py
-```
-
-Genera `eval_comparativa.json`.
-
-## 10. MCP
+## 9. MCP
 
 ```bash
 uv run python mcp_server.py
@@ -307,7 +313,7 @@ Tool principal actualizada:
 responder_con_rag(pregunta: str, k: int = 4, prompt_name: str = "rag-basico")
 ```
 
-## 11. Conceptos que enseña
+## 10. Conceptos que enseña
 
 - Observabilidad: poder reconstruir qué pasó.
 - Prompt Management: cambios de prompt como cambios de producto.

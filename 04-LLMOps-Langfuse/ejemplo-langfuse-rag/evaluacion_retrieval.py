@@ -1,9 +1,14 @@
-"""Evalúa solo la recuperación: ¿Chroma devuelve las fuentes esperadas?
+"""Evalúa solo la recuperación: ¿Chroma devuelve los fragmentos esperados?
 
 Uso:
     uv run python evaluacion_retrieval.py
 
 No llama al LLM. Sirve para separar errores de retrieval de errores de generación.
+
+Cada caso indica en `expected_sources` no solo el fichero, sino el/los
+fragmento(s) correctos (`fichero -> [frag, ...]`). Distinguimos así dos cosas:
+- acierto de fragmento: recuperamos el fragmento exacto que contiene la respuesta.
+- acierto de fichero: recuperamos el fichero correcto aunque sea otro fragmento.
 """
 
 from __future__ import annotations
@@ -16,73 +21,106 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from eval_common import (
+    expected_files,
+    expected_pairs,
+    format_expected,
+    format_pairs,
+    load_cases,
+    pct,
+    render_table,
+)
 from rag_core import SimpleRAG
 
 load_dotenv()
-
-ROOT = Path(__file__).resolve().parent
-CASES_PATH = ROOT / "eval_cases.json"
-
-
-def load_cases() -> list[dict]:
-    return json.loads(CASES_PATH.read_text(encoding="utf-8"))
-
-
-def format_retrieval_summary(report: dict) -> str:
-    total = int(report.get("total") or 0)
-    passed = int(report.get("passed") or 0)
-    score = float(report.get("score") or 0.0)
-    lines = [f"Evaluación retrieval: {passed}/{total} casos pasados ({score * 100:.1f}%)."]
-    failed_rows = [row for row in report.get("rows", []) if not row.get("retrieval_hit")]
-    if not failed_rows:
-        lines.append("Todos los casos recuperaron una fuente esperada.")
-    else:
-        lines.append("Casos fallidos:")
-        for row in failed_rows:
-            expected = ", ".join(row.get("expected_sources") or []) or "sin fuente esperada"
-            retrieved = ", ".join(row.get("retrieved_sources") or []) or "sin resultados"
-            lines.append(f"- {row.get('id')}: esperaba [{expected}], recuperó [{retrieved}]")
-    return "\n".join(lines)
 
 
 def evaluate_retrieval(k: int = 4) -> dict:
     rag = SimpleRAG(auto_ingest=True)
     rows = []
-    passed = 0
+    fragment_hits = 0
+    file_hits = 0
 
     for case in load_cases():
-        expected_sources = set(case.get("expected_sources") or [])
+        exp_pairs = expected_pairs(case)
+        exp_files = expected_files(case)
+
         results = rag.search(case["question"], k=k)
-        retrieved_sources = [r.source for r in results]
-        retrieved_set = set(retrieved_sources)
-        hit = not expected_sources or bool(expected_sources & retrieved_set)
+        retrieved_pairs = [(r.source, r.chunk_id) for r in results]
+        retrieved_files = {source for source, _ in retrieved_pairs}
+
+        matched_pairs = sorted(exp_pairs & set(retrieved_pairs))
+        fragment_hit = bool(matched_pairs)
+        file_hit = bool(exp_files & retrieved_files)
         max_similarity = max((r.score for r in results), default=0.0)
-        if hit:
-            passed += 1
+
+        if fragment_hit:
+            fragment_hits += 1
+        if file_hit:
+            file_hits += 1
+
         rows.append(
             {
                 "id": case["id"],
-                "type": case["type"],
                 "question": case["question"],
-                "expected_sources": sorted(expected_sources),
-                "retrieved_sources": retrieved_sources,
-                "retrieval_hit": hit,
+                "expected": format_expected(case),
+                "expected_sources": case.get("expected_sources") or {},
+                "retrieved": retrieved_pairs,
+                "matched_fragments": matched_pairs,
+                "fragment_hit": fragment_hit,
+                "file_hit": file_hit,
                 "max_similarity": round(max_similarity, 4),
             }
         )
 
+    total = len(rows)
     return {
-        "metric": "retrieval_source_hit_rate",
+        "metric": "retrieval_fragment_hit_rate",
         "k": k,
-        "passed": passed,
-        "total": len(rows),
-        "score": round(passed / len(rows), 3) if rows else 0.0,
+        "total": total,
+        "fragment_hits": fragment_hits,
+        "file_hits": file_hits,
+        "fragment_hit_rate": round(fragment_hits / total, 3) if total else 0.0,
+        "file_hit_rate": round(file_hits / total, 3) if total else 0.0,
         "rows": rows,
     }
 
 
+def format_retrieval_table(report: dict) -> str:
+    headers = ["Caso", "Frag OK", "File OK", "Esperado", "Recuperado (top-k)"]
+    rows = []
+    for row in report["rows"]:
+        rows.append(
+            [
+                row["id"],
+                "✓" if row["fragment_hit"] else "✗",
+                "✓" if row["file_hit"] else "✗",
+                row["expected"],
+                format_pairs(row["retrieved"]),
+            ]
+        )
+
+    total = report["total"]
+    summary = render_table(
+        ["Métrica", "Valor"],
+        [
+            ["Casos", str(total)],
+            ["Aciertos de fragmento", f"{report['fragment_hits']}/{total} ({pct(report['fragment_hits'], total)})"],
+            ["Aciertos de fichero", f"{report['file_hits']}/{total} ({pct(report['file_hits'], total)})"],
+            ["k (fragmentos recuperados)", str(report["k"])],
+        ],
+    )
+
+    return (
+        f"Evaluación de retrieval (k={report['k']})\n\n"
+        + render_table(headers, rows)
+        + "\n\nResumen\n\n"
+        + summary
+    )
+
+
 if __name__ == "__main__":
     report = evaluate_retrieval()
-    print(format_retrieval_summary(report))
+    print(format_retrieval_table(report))
     print("\nJSON completo:")
     print(json.dumps(report, ensure_ascii=False, indent=2))

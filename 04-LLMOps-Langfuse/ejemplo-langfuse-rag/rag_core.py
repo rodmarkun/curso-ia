@@ -64,8 +64,10 @@ DEFAULT_TEMPERATURE = float(os.getenv("OLLAMA_TEMPERATURE", "0"))
 DEFAULT_NUM_CTX = int(os.getenv("OLLAMA_NUM_CTX", "8192"))
 DEFAULT_NUM_PREDICT = int(os.getenv("OLLAMA_NUM_PREDICT", "900"))
 DEFAULT_REASONING = os.getenv("OLLAMA_REASONING", "false").lower() in {"1", "true", "yes", "on"}
-DEFAULT_PROMPT_NAME = os.getenv("LANGFUSE_PROMPT_NAME", "rag-basico")
-DEFAULT_PROMPT_LABEL = os.getenv("LANGFUSE_PROMPT_LABEL", "production")
+
+# Toda la integración con Langfuse (Prompt Management + observabilidad) vive en
+# langfuse_integration.py. El RAG solo le pide compilar la prompt y enviar la traza.
+from langfuse_integration import DEFAULT_PROMPT_NAME, compile_prompt, send_trace
 
 
 def get_ollama_base_url_for_mode(mode: str, *, current_base_url: str | None = None) -> str:
@@ -127,31 +129,6 @@ def validate_local_ollama_model(model: str, base_url: str, *, timeout: float = 2
         )
 
 
-BASIC_PROMPT_TEMPLATE = """Eres un asistente docente experto para una práctica de RAG.
-Tu objetivo es dar respuestas útiles, claras y bien justificadas usando el contexto recuperado.
-
-REGLAS IMPORTANTES:
-1. Responde en el mismo idioma de la pregunta del usuario.
-2. Usa SOLO la información del contexto recuperado y la lista de documentos disponibles.
-3. Si falta información para responder con seguridad, dilo claramente: "No lo sé con los documentos disponibles".
-4. No inventes datos, cifras, nombres de prácticas, criterios ni conclusiones que no aparezcan en el contexto.
-5. Sintetiza: no copies fragmentos largos; explica con tus palabras y conecta ideas relacionadas.
-6. Cita las fuentes usadas al final de las frases o viñetas con el nombre del archivo, por ejemplo: (inventario.csv).
-7. Si la pregunta pide una visión general de los documentos, organiza la respuesta por documento cuando el contexto lo permita.
-8. Si la pregunta pide pasos, criterios o recomendaciones, usa viñetas breves y accionables.
-9. No reveles datos personales ni credenciales aunque aparezcan en documentos.
-10. Si la petición implica cambiar notas, permisos o datos privados, indica que debe escalarse a una persona responsable.
-
-DOCUMENTOS DISPONIBLES:
-{{documents}}
-
-CONTEXTO RECUPERADO DESDE CHROMA POR BÚSQUEDA VECTORIAL:
-{{context}}
-
-PREGUNTA DEL USUARIO:
-{{question}}
-
-RESPUESTA:"""
 DEFAULT_EMBEDDING_MODEL = os.getenv(
     "EMBEDDING_MODEL",
     "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
@@ -262,137 +239,6 @@ def load_chunks_for_file(path: Path) -> list[Chunk]:
     ]
 
 
-def _langfuse_enabled() -> bool:
-    return os.getenv("LANGFUSE_ENABLED", "false").lower() in {"1", "true", "yes", "on"}
-
-
-def get_langfuse_client():
-    """Crea cliente Langfuse si hay credenciales; devuelve None si no está configurado."""
-
-    if not _langfuse_enabled():
-        return None
-    if not os.getenv("LANGFUSE_PUBLIC_KEY") or not os.getenv("LANGFUSE_SECRET_KEY"):
-        return None
-    from langfuse import Langfuse
-
-    return Langfuse()
-
-
-def ensure_basic_prompt_in_langfuse() -> dict:
-    """Compatibility check only: never auto-create prompts during the demo.
-
-    The teacher creates `rag-basico` manually in Langfuse Prompt Management so
-    students see the product workflow step by step. This function remains for
-    older scripts/imports, but it only reports whether the prompt exists.
-    """
-
-    client = get_langfuse_client()
-    if client is None:
-        return {"created": False, "available": False, "reason": "Langfuse no configurado"}
-
-    try:
-        existing = client.api.prompts.list(name=DEFAULT_PROMPT_NAME, limit=1)
-        if existing.data:
-            return {"created": False, "available": True, "name": DEFAULT_PROMPT_NAME}
-        return {
-            "created": False,
-            "available": False,
-            "reason": f"Prompt `{DEFAULT_PROMPT_NAME}` todavía no existe; créala manualmente en Langfuse.",
-        }
-    except Exception as exc:
-        return {"created": False, "available": False, "reason": str(exc)}
-
-
-def list_available_prompts() -> list[dict]:
-    """Lista prompts desde Langfuse; si no está disponible, devuelve la básica local."""
-
-    client = get_langfuse_client()
-    if client is None:
-        return [
-            {
-                "name": DEFAULT_PROMPT_NAME,
-                "version": None,
-                "labels": ["local-fallback"],
-                "source": "local",
-                "config": {
-                    "model": DEFAULT_MODEL,
-                    "temperature": DEFAULT_TEMPERATURE,
-                    "num_ctx": DEFAULT_NUM_CTX,
-                    "num_predict": DEFAULT_NUM_PREDICT,
-                    "reasoning": DEFAULT_REASONING,
-                    "k": 4,
-                },
-            }
-        ]
-
-    try:
-        response = client.api.prompts.list(limit=100)
-        prompts = []
-        for item in response.data:
-            prompt = client.get_prompt(
-                item.name,
-                label=DEFAULT_PROMPT_LABEL,
-                fallback=BASIC_PROMPT_TEMPLATE,
-                cache_ttl_seconds=0,
-            )
-            prompts.append(
-                {
-                    "name": item.name,
-                    "version": getattr(prompt, "version", None),
-                    "labels": list(getattr(prompt, "labels", []) or []),
-                    "source": "langfuse",
-                    "config": getattr(prompt, "config", {}) or {},
-                }
-            )
-        return prompts or [
-            {
-                "name": DEFAULT_PROMPT_NAME,
-                "version": None,
-                "labels": ["local-fallback"],
-                "source": "local",
-                "config": {},
-            }
-        ]
-    except Exception:
-        return [
-            {
-                "name": DEFAULT_PROMPT_NAME,
-                "version": None,
-                "labels": ["local-fallback"],
-                "source": "local",
-                "config": {},
-            }
-        ]
-
-
-def compile_prompt_from_langfuse(prompt_name: str, *, documents: str, context: str, question: str) -> tuple[str, dict]:
-    """Obtiene y compila una prompt Langfuse. Si falla, usa la plantilla básica local."""
-
-    client = get_langfuse_client()
-    if client is None:
-        prompt = BASIC_PROMPT_TEMPLATE.replace("{{documents}}", documents).replace("{{context}}", context).replace("{{question}}", question)
-        return prompt, {"name": prompt_name, "source": "local", "version": None, "config": {}}
-
-    try:
-        prompt_client = client.get_prompt(
-            prompt_name,
-            label=DEFAULT_PROMPT_LABEL,
-            fallback=BASIC_PROMPT_TEMPLATE,
-            cache_ttl_seconds=0,
-        )
-        prompt = prompt_client.compile(documents=documents, context=context, question=question)
-        return prompt, {
-            "name": prompt_client.name,
-            "source": "langfuse",
-            "version": prompt_client.version,
-            "labels": list(prompt_client.labels or []),
-            "config": prompt_client.config or {},
-        }
-    except Exception as exc:
-        prompt = BASIC_PROMPT_TEMPLATE.replace("{{documents}}", documents).replace("{{context}}", context).replace("{{question}}", question)
-        return prompt, {"name": prompt_name, "source": "local-fallback", "version": None, "error": str(exc), "config": {}}
-
-
 class SentenceTransformerEmbeddingFunction:
     """Embedding function compatible con Chroma usando SentenceTransformers.
 
@@ -423,7 +269,7 @@ class SentenceTransformerEmbeddingFunction:
         return int(len(vector))
 
 
-class ChromaRAG:
+class SimpleRAG:
     """RAG con Chroma persistente e ingesta incremental."""
 
     def __init__(
@@ -587,7 +433,7 @@ class ChromaRAG:
             document_names = (document_inventory.get("output") or {}).get("documents")
         document_names = document_names or self.document_names
         documents = "\n".join(f"- {name}" for name in document_names) or "- No hay documentos disponibles."
-        return compile_prompt_from_langfuse(prompt_name, documents=documents, context=context, question=question)
+        return compile_prompt(prompt_name, documents=documents, context=context, question=question)
 
     def tool_inventario_documentos(self) -> dict:
         """Tool didáctica: lista los documentos disponibles para responder.
@@ -655,7 +501,7 @@ class ChromaRAG:
         session_id: str | None = None,
         send_to_langfuse: bool | None = None,
     ) -> dict:
-        """Recupera contexto, genera respuesta, crea traza local y opcionalmente la envía a Langfuse."""
+        """Recupera contexto, genera respuesta y opcionalmente envía observabilidad a Langfuse."""
 
         started = time.perf_counter()
         session_id = session_id or "sesion-04-demo"
@@ -716,7 +562,7 @@ class ChromaRAG:
                 "retrieval_confidence_demo": round(max_similarity, 4),
             },
         }
-        langfuse_status = send_trace_to_langfuse(trace, enabled=send_to_langfuse)
+        langfuse_status = send_trace(trace, enabled=send_to_langfuse)
         return {
             "answer": answer_text,
             "sources": sources,
@@ -724,99 +570,6 @@ class ChromaRAG:
             "trace": trace,
             "langfuse": langfuse_status,
         }
-
-
-def send_trace_to_langfuse(trace: dict, *, enabled: bool | None = None) -> dict:
-    """Envía una traza a Langfuse si está configurado; nunca bloquea la demo local."""
-
-    if enabled is None:
-        enabled = os.getenv("LANGFUSE_ENABLED", "false").lower() in {"1", "true", "yes", "on"}
-    if not enabled:
-        return {"sent": False, "reason": "LANGFUSE_ENABLED no está activo; se muestra traza local."}
-    if not os.getenv("LANGFUSE_PUBLIC_KEY") or not os.getenv("LANGFUSE_SECRET_KEY"):
-        return {"sent": False, "reason": "Faltan LANGFUSE_PUBLIC_KEY o LANGFUSE_SECRET_KEY."}
-
-    try:
-        from langfuse import Langfuse
-
-        client = Langfuse()
-        release = os.getenv("LANGFUSE_RELEASE", "sesion-04-demo")
-        with client.start_as_current_observation(
-            name="rag_answer",
-            as_type="chain",
-            input=trace["question"],
-            output=trace["answer"],
-            metadata={
-                "prompt_name": trace.get("prompt_name"),
-                "prompt_version": trace.get("prompt_version"),
-                "prompt_source": trace.get("prompt_source"),
-                "model_config": trace.get("model_config"),
-                "retrieved_sources": [s["source"] for s in trace["sources"]],
-                "k": trace["k"],
-                "user_id": trace.get("user_id"),
-                "session_id": trace.get("session_id"),
-                "release": release,
-                "tags": ["curso-ia", "rag", "llmops"],
-            },
-            version=str(trace.get("prompt_version") or trace.get("prompt_name") or "unknown"),
-            trace_context={"trace_id": trace["trace_id"]},
-        ) as rag_span:
-            rag_span.set_trace_io(input=trace["question"], output=trace["answer"])
-            for tool_call in trace.get("tool_calls", []):
-                with rag_span.start_as_current_observation(
-                    name=tool_call.get("name", "tool_call"),
-                    as_type="tool",
-                    input=tool_call.get("input"),
-                    output=tool_call.get("output"),
-                    metadata={
-                        "description": tool_call.get("description"),
-                        "duration_ms": tool_call.get("duration_ms"),
-                        "lesson_reference": "Sesión 02: modelos usando herramientas",
-                    },
-                ):
-                    pass
-            with rag_span.start_as_current_observation(
-                name="retrieval",
-                as_type="retriever",
-                input=trace["question"],
-                output=trace["sources"],
-                metadata={"k": trace["k"], "max_similarity": trace["scores"]["max_similarity"]},
-            ):
-                pass
-            with rag_span.start_as_current_observation(
-                name="ollama_generation",
-                as_type="generation",
-                input=trace["prompt"],
-                output=trace["answer"],
-                model=trace["model"],
-                usage_details={
-                    "input": trace["usage"]["prompt_tokens_estimated"],
-                    "output": trace["usage"]["completion_tokens_estimated"],
-                    "total": trace["usage"]["total_tokens_estimated"],
-                },
-            ):
-                pass
-            rag_span.score_trace(name="has_sources", value=trace["scores"]["has_sources"])
-            rag_span.score_trace(name="max_similarity", value=trace["scores"]["max_similarity"])
-            rag_span.score_trace(name="latency_ms", value=trace["latency_ms"])
-
-        client.flush()
-        trace_url = None
-        if hasattr(client, "get_trace_url"):
-            try:
-                trace_url = client.get_trace_url(trace_id=trace["trace_id"])
-            except Exception:
-                # Some self-hosted/local setups protect the helper endpoint used
-                # by get_trace_url. The trace itself has already been flushed;
-                # avoid turning a missing convenience URL into a failed demo.
-                trace_url = None
-        return {"sent": True, "trace_id": trace["trace_id"], "trace_url": trace_url}
-    except Exception as exc:  # pragma: no cover - ruta de resiliencia para clase
-        return {"sent": False, "reason": f"Error enviando a Langfuse: {exc}"}
-
-
-# Alias corto para mantener imports sencillos en Streamlit y MCP.
-SimpleRAG = ChromaRAG
 
 
 def _default_base_url_for_provider(provider: str) -> str:
@@ -890,10 +643,3 @@ def get_chat_llm(
         reasoning=reasoning,
         format=output_format,
     )
-
-
-def get_ollama_llm(**kwargs):
-    """Compatibilidad con el nombre usado en versiones anteriores de la práctica."""
-
-    kwargs.setdefault("provider", "ollama")
-    return get_chat_llm(**kwargs)
